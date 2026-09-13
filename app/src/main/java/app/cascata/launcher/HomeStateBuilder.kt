@@ -78,14 +78,70 @@ class HomeStateBuilder<T>(
     }
 }
 
-/** Casa no começo do rótulo ou de qualquer palavra dele — nunca no meio de uma palavra. */
-fun matchesQuery(normalizedLabel: String, needle: String): Boolean =
-    normalizedLabel.startsWith(needle) ||
-        normalizedLabel.split(' ').any { it.startsWith(needle) }
+/** A partir daqui vale a tolerância a erro; abaixo disso, prefixo tem de ser exato. */
+private const val FUZZY_MIN = 4
 
-/** Prefixo do rótulo inteiro vem antes de prefixo de palavra interna. */
-fun queryRank(normalizedLabel: String, needle: String): Int =
-    if (normalizedLabel.startsWith(needle)) 0 else 1
+/**
+ * Casa no começo do rótulo ou de qualquer palavra dele — nunca no meio de uma
+ * palavra. Com quatro letras ou mais, aceita também uma letra errada: "whatsap"
+ * acha "WhatsApp" e "telgram" acha "Telegram". Prefixos curtos continuam
+ * exatos, senão duas letras casariam com meia gaveta.
+ */
+fun matchesQuery(normalizedLabel: String, needle: String): Boolean {
+    if (normalizedLabel.startsWith(needle)) return true
+    val words = normalizedLabel.split(' ')
+    return words.any { it.startsWith(needle) } || words.any { fuzzyMatches(it, needle) }
+}
+
+/** Prefixo do rótulo, prefixo de palavra interna, e por último o que só casa com erro. */
+fun queryRank(normalizedLabel: String, needle: String): Int = when {
+    normalizedLabel.startsWith(needle) -> 0
+    normalizedLabel.split(' ').any { it.startsWith(needle) } -> 1
+    else -> 2
+}
+
+/**
+ * A busca com erro compara a query com o começo da palavra. O tamanho do
+ * pedaço varia de um para cada lado porque o erro pode ser uma letra a mais ou
+ * a menos: "telgram" (7) só encontra "telegram" quando comparado com as 8
+ * primeiras letras dela.
+ */
+private fun fuzzyMatches(word: String, needle: String): Boolean {
+    if (needle.length < FUZZY_MIN || word.length < FUZZY_MIN) return false
+    for (size in needle.length - 1..needle.length + 1) {
+        if (size < 1 || size > word.length) continue
+        if (editDistanceAtMostOne(needle, word.take(size))) return true
+    }
+    return false
+}
+
+/**
+ * Distância de Damerau-Levenshtein <= 1 (troca, inserção, remoção ou duas
+ * letras trocadas de lugar). Como o limite é 1, basta achar a primeira
+ * diferença e conferir se o resto bate — não há matriz para alocar, e a busca
+ * roda a cada tecla.
+ */
+fun editDistanceAtMostOne(a: String, b: String): Boolean {
+    val diff = a.length - b.length
+    if (diff > 1 || diff < -1) return false
+    var i = 0
+    while (i < a.length && i < b.length && a[i] == b[i]) i++
+    if (i == a.length && i == b.length) return true
+    return when {
+        // Mesmo tamanho: uma troca de letra, ou duas letras invertidas.
+        diff == 0 ->
+            a.regionMatches(i + 1, b, i + 1, a.length - i - 1) ||
+                (
+                    i + 1 < a.length &&
+                        a[i] == b[i + 1] && a[i + 1] == b[i] &&
+                        a.regionMatches(i + 2, b, i + 2, a.length - i - 2)
+                    )
+        // "a" tem uma letra a mais: remover a[i] iguala as duas.
+        diff == 1 -> a.regionMatches(i + 1, b, i, b.length - i)
+        // "b" tem uma letra a mais: remover b[i].
+        else -> b.regionMatches(i + 1, a, i, a.length - i)
+    }
+}
 
 /** Move um item de lugar. Índice fora da lista devolve null — o arraste foi perdido. */
 fun <E> moveItem(list: List<E>, fromIndex: Int, toIndex: Int): List<E>? {

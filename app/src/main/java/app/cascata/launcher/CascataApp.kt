@@ -15,6 +15,8 @@ import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.notifications.NotificationAccess
 import app.cascata.launcher.data.notifications.NotificationPrefs
 import app.cascata.launcher.data.notifications.NotificationStore
+import app.cascata.launcher.data.search.ContactsSource
+import app.cascata.launcher.data.search.SearchPrefs
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.WallpaperColorsSource
@@ -63,4 +65,9 @@ class CascataApp : Application() {
     // restauração e a home falam com o mesmo id de host.
     val widgetPrefs: WidgetPrefs by lazy { WidgetPrefs(this) }
     val widgetHost: WidgetHostManager by lazy { WidgetHostManager(this) }
+
+    // Fase 6. Criar a fonte de contatos não lê nada: sem a opção ligada e sem a
+    // permissão concedida ela devolve lista vazia sem tocar no provedor.
+    val searchPrefs: SearchPrefs by lazy { SearchPrefs(this) }
+    val contactsSource: ContactsSource by lazy { ContactsSource(this) }
 }

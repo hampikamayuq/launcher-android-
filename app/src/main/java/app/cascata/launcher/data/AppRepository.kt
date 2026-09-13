@@ -17,6 +17,8 @@ import android.util.LruCache
 import androidx.annotation.RequiresApi
 import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.theme.ThemePrefs
+import app.cascata.launcher.matchesQuery
+import app.cascata.launcher.queryRank
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -30,6 +32,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.text.Collator
 
@@ -38,6 +42,16 @@ private const val MAX_SHORTCUTS = 6
 
 /** Um ícone pronto para desenhar, mais de onde ele veio. */
 data class LoadedIcon(val drawable: Drawable, val fromPack: Boolean)
+
+/**
+ * Um atalho encontrado na busca, com o app dono dele quando dá para resolvê-lo.
+ * O rótulo do app aqui é o do sistema, sem apelido: o índice é do repositório e
+ * não enxerga o DataStore de apelidos.
+ */
+data class ShortcutMatch(val shortcut: ShortcutInfo, val app: AppEntry?)
+
+/** O que o índice guarda de cada atalho: o resultado pronto e o rótulo normalizado. */
+private class IndexedShortcut(val match: ShortcutMatch, val normalizedLabel: String)
 
 /**
  * Fonte única da lista de apps. Lê via [LauncherApps] (todos os perfis do usuário)
@@ -61,7 +75,12 @@ class AppRepository(
 
     val apps: Flow<List<AppEntry>> = packageChanges()
         .conflate()
-        .map { loadApps() }
+        .map {
+            // Instalar, remover ou atualizar um pacote muda também os atalhos
+            // dele: o índice da busca cai junto e se refaz na próxima consulta.
+            shortcutIndex = null
+            loadApps()
+        }
         .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
@@ -164,6 +183,80 @@ class AppRepository(
             .sortedBy { it.rank }
             .take(MAX_SHORTCUTS)
     }
+
+    /**
+     * Índice de todos os atalhos visíveis, de todos os perfis. Carregado na
+     * primeira busca e reusado: uma consulta por perfil custa bem menos que uma
+     * por pacote, e a lista só muda quando um pacote muda.
+     */
+    @Volatile
+    private var shortcutIndex: List<IndexedShortcut>? = null
+
+    /** Duas teclas seguidas não podem disparar duas cargas do índice. */
+    private val shortcutIndexLock = Mutex()
+
+    /**
+     * Atalhos que casam com o termo, para a busca. Sem permissão de host não há
+     * nem consulta — e o índice é descartado, para que virar launcher padrão
+     * (false -> true) o reconstrua em vez de devolver o vazio de antes.
+     */
+    suspend fun searchShortcuts(needle: String, limit: Int = 8): List<ShortcutMatch> {
+        val n = normalizeLabel(needle)
+        if (n.isEmpty()) return emptyList()
+        if (!hasShortcutHostPermission()) {
+            shortcutIndex = null
+            return emptyList()
+        }
+        return shortcutIndexOrLoad()
+            .filter { matchesQuery(it.normalizedLabel, n) }
+            .sortedWith(compareBy({ queryRank(it.normalizedLabel, n) }, { it.normalizedLabel }))
+            .take(limit)
+            .map { it.match }
+    }
+
+    private suspend fun shortcutIndexOrLoad(): List<IndexedShortcut> = shortcutIndexLock.withLock {
+        shortcutIndex ?: loadShortcutIndex().also { shortcutIndex = it }
+    }
+
+    private suspend fun loadShortcutIndex(): List<IndexedShortcut> = withContext(Dispatchers.IO) {
+        // Sem setPackage: uma consulta por perfil traz tudo o que o sistema deixa
+        // ver, em vez de uma consulta por app instalado.
+        val query = LauncherApps.ShortcutQuery()
+            .setQueryFlags(
+                LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or
+                    LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                    LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED
+            )
+        val profiles = userManager?.userProfiles ?: listOf(Process.myUserHandle())
+        val owners = HashMap<String, AppEntry?>()
+        profiles.flatMap { user ->
+            runCatching { launcherApps.getShortcuts(query, user) }.getOrNull().orEmpty()
+                .mapNotNull { shortcut ->
+                    val label = (shortcut.shortLabel ?: shortcut.longLabel)?.toString().orEmpty()
+                    if (label.isBlank()) return@mapNotNull null
+                    val ownerKey = appKeyOf(shortcut.`package`, user.hashCode())
+                    if (!owners.containsKey(ownerKey)) {
+                        owners[ownerKey] = mainEntry(shortcut.`package`, user)
+                    }
+                    IndexedShortcut(
+                        match = ShortcutMatch(shortcut, owners[ownerKey]),
+                        normalizedLabel = normalizeLabel(label),
+                    )
+                }
+        }
+    }
+
+    /** A entrada do app dono do atalho, para a UI mostrar de quem ele é. */
+    private fun mainEntry(packageName: String, user: UserHandle): AppEntry? = runCatching {
+        launcherApps.getActivityList(packageName, user).firstOrNull()?.let { info ->
+            appEntry(
+                component = info.componentName,
+                user = user,
+                originalLabel = info.label?.toString().orEmpty().ifEmpty { packageName },
+                isPrivateProfile = isPrivateProfile(user),
+            )
+        }
+    }.getOrNull()
 
     /** Ícone de um atalho, na densidade da tela. Chame fora da main thread. */
     suspend fun shortcutIcon(shortcut: ShortcutInfo): Drawable? = withContext(Dispatchers.IO) {

@@ -26,6 +26,16 @@
         <intent>
             <action android:name="com.gau.go.launcherex.theme" />
         </intent>
+
+        <!--
+          Índice de configurações do sistema na busca: sem enxergar o app de
+          Configurações, Intent.resolveActivity devolve null para todas as telas
+          e a seção inteira some. Uma ação só, a da tela principal — é o mínimo
+          que torna o pacote visível para o resolve das demais.
+        -->
+        <intent>
+            <action android:name="android.settings.SETTINGS" />
+        </intent>
     </queries>
 
     <!--
@@ -38,6 +48,9 @@
 
     <!-- Declarada; só é pedida quando o card de agenda é ligado. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+
+    <!-- Declarada; pedida só ao ligar contatos na busca. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!--
       BIND_APPWIDGET é permissão de sistema: um launcher de terceiro nunca a
