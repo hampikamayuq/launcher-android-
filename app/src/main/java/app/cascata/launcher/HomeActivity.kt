@@ -1,5 +1,6 @@
 package app.cascata.launcher
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,14 +9,24 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import app.cascata.launcher.data.glance.GlanceSettings
 import app.cascata.launcher.data.theme.ThemeSettings
+import app.cascata.launcher.data.widgets.WidgetLayout
+import app.cascata.launcher.data.widgets.moveSlot
+import app.cascata.launcher.data.widgets.removeWidget
+import app.cascata.launcher.data.widgets.resizeSlot
+import app.cascata.launcher.data.widgets.setActive
 import app.cascata.launcher.ui.HomeScreen
 import app.cascata.launcher.ui.theme.CascataTheme
+import app.cascata.launcher.ui.widgets.WidgetActions
+import app.cascata.launcher.widgets.WidgetPickerActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -65,6 +76,26 @@ class HomeActivity : ComponentActivity() {
                     }
             }
 
+            // Os widgets colocados. Lista vazia é o caso normal de quem nunca
+            // adicionou nenhum: a área nem chega a virar item da lista.
+            val widgetLayout by app.widgetPrefs.layout
+                .collectAsStateWithLifecycle(initialValue = WidgetLayout.EMPTY)
+
+            val widgetActions = remember {
+                WidgetActions(
+                    onResize = { slotId, cells -> updateWidgets { it.resizeSlot(slotId, cells) } },
+                    onMove = { slotId, delta -> updateWidgets { it.moveSlot(slotId, delta) } },
+                    // O id volta para o host antes de sair do layout: sem isso
+                    // ele ficaria alocado, e o provedor continuaria atualizando.
+                    onRemove = { id ->
+                        app.widgetHost.deleteId(id)
+                        updateWidgets { it.removeWidget(id) }
+                    },
+                    onSetActive = { slotId, index -> updateWidgets { it.setActive(slotId, index) } },
+                    onAddToSlot = { slotId -> openWidgetPicker(slotId) },
+                )
+            }
+
             CascataTheme(
                 settings = settings,
                 customFont = customFont,
@@ -80,9 +111,40 @@ class HomeActivity : ComponentActivity() {
                     calendarSource = app.calendarSource,
                     weatherSource = app.weatherSource,
                     mediaSource = app.mediaSource,
+                    widgetLayout = widgetLayout,
+                    widgetHost = app.widgetHost,
+                    widgetActions = widgetActions,
                 )
             }
         }
+    }
+
+    /**
+     * O host só escuta enquanto a home está na tela: widget atualizando com o
+     * launcher em segundo plano não tem onde desenhar. `stopListening` também é
+     * o que solta as `AppWidgetHostView` que saíram da composição.
+     */
+    override fun onStart() {
+        super.onStart()
+        (application as CascataApp).widgetHost.startListening()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        (application as CascataApp).widgetHost.stopListening()
+    }
+
+    /** Uma transação do DataStore por toque; o Flow devolve o layout novo. */
+    private fun updateWidgets(transform: (WidgetLayout) -> WidgetLayout) {
+        val app = application as CascataApp
+        lifecycleScope.launch { app.widgetPrefs.update(transform) }
+    }
+
+    /** Sem [slotId] o escolhido abre um slot novo no fim; com ele, empilha. */
+    private fun openWidgetPicker(slotId: Int?) {
+        val intent = Intent(this, WidgetPickerActivity::class.java)
+        if (slotId != null) intent.putExtra(WidgetPickerActivity.EXTRA_SLOT_ID, slotId)
+        runCatching { startActivity(intent) }
     }
 
     /** O usuário pode ter trocado a home padrão nas configurações enquanto estávamos fora. */

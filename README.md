@@ -12,10 +12,11 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.5.0 — Fases 1 a 4 concluídas)
+## Estado atual (v0.6.0 — Fases 1 a 5 concluídas)
 
 | | |
 |---|---|
+| Widgets acima da lista: pilha com swipe, redimensionar, mover, restauração após backup | ✅ |
 | Notificações na lista: badge por app, expansão inline com ações e resposta direta | ✅ |
 | Card de mídia com controles | ✅ |
 | Relógio em 4 estilos (básico, dígitos grandes, duas linhas, analógico) | ✅ |
@@ -40,7 +41,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| Widgets | próxima fase ([plano](docs/plano.md)) |
+| Busca ampliada, uso opcional, backup em arquivo, publicação | próximas fases ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -110,14 +111,17 @@ app/src/main/java/app/cascata/launcher/
 │   │                          # WallpaperColorsSource, FontStore
 │   ├── iconpack/              # pacotes no formato aberto (appfilter.xml)
 │   ├── glance/                # alarme, bateria, agenda, mídia, weather/
-│   └── notifications/         # store em memória, texto, agrupamento, prefs
+│   ├── notifications/         # store em memória, texto, agrupamento, prefs
+│   └── widgets/               # WidgetLayout (puro), WidgetPrefs, WidgetHostManager
 ├── notifications/             # CascataNotificationListener (bind só do sistema)
+├── widgets/                   # WidgetPickerActivity, AppWidgetsRestoredReceiver
 ├── settings/                  # tela de configurações, uma seção por arquivo
 └── ui/
     ├── HomeScreen.kt, AlphabetIndex.kt, AppIcon.kt, FavoritesRow.kt, sheets…
     ├── clock/                 # quatro estilos de relógio
     ├── glance/                # chips do topo
     ├── notifications/         # badge e expansão inline
+    ├── widgets/               # área de widgets, pilha, folha de edição
     └── theme/                 # CascataTheme, Fonts
 app/src/full/                  # clima Open-Meteo + INTERNET/COARSE_LOCATION
 app/src/lite/                  # stub de clima; edição sem rede

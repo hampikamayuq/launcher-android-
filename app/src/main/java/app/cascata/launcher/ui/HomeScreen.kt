@@ -59,6 +59,8 @@ import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.notifications.BadgeStyle
 import app.cascata.launcher.data.theme.ClockStyle
+import app.cascata.launcher.data.widgets.WidgetHostManager
+import app.cascata.launcher.data.widgets.WidgetLayout
 import app.cascata.launcher.ui.clock.ClockHeader
 import app.cascata.launcher.ui.glance.GlanceRow
 import app.cascata.launcher.ui.notifications.NotificationBadge
@@ -67,6 +69,8 @@ import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
 import app.cascata.launcher.ui.theme.LocalLauncherDensity
 import app.cascata.launcher.ui.theme.iconSize
 import app.cascata.launcher.ui.theme.rowPadding
+import app.cascata.launcher.ui.widgets.WidgetActions
+import app.cascata.launcher.ui.widgets.WidgetArea
 import kotlinx.coroutines.launch
 
 private val INDEX_WIDTH = 28.dp
@@ -87,6 +91,9 @@ fun HomeScreen(
     calendarSource: CalendarSource,
     weatherSource: WeatherSource,
     mediaSource: MediaSource,
+    widgetLayout: WidgetLayout,
+    widgetHost: WidgetHostManager,
+    widgetActions: WidgetActions,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -209,6 +216,9 @@ fun HomeScreen(
             val rowIndexOf: (Int) -> Int = { item ->
                 if (expandedRow == null || item <= expandedRow) item else item - 1
             }
+            // Os widgets são um item da lista antes de todas as linhas: o índice
+            // dentro do `items` não muda, mas o da LazyColumn inteira anda um.
+            val widgetItems = if (widgetLayout.slots.isNotEmpty()) 1 else 0
 
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
@@ -219,6 +229,18 @@ fun HomeScreen(
                         .nestedScroll(swipeUp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    // Primeiro item, acima das linhas de app: os widgets rolam
+                    // junto com a lista em vez de comerem a altura do cabeçalho.
+                    if (widgetItems > 0) {
+                        item(key = "widgets", contentType = "widgets") {
+                            WidgetArea(
+                                layout = widgetLayout,
+                                host = widgetHost,
+                                actions = widgetActions,
+                            )
+                        }
+                    }
+
                     items(
                         count = state.rows.size + if (expandedRow != null) 1 else 0,
                         key = { index ->
@@ -297,9 +319,11 @@ fun HomeScreen(
                         letters = state.sectionIndex.keys.toList(),
                         onLetterFocused = { letter ->
                             state.sectionIndex[letter]?.let { index ->
-                                // Índice da linha -> índice do item: o bloco
-                                // aberto acima do destino vale uma posição.
-                                val target = index + if (expandedRow != null && expandedRow < index) 1 else 0
+                                // Índice da linha -> índice do item: a área de
+                                // widgets vale uma posição, e o bloco de
+                                // notificações aberto acima do destino, outra.
+                                val target = index + widgetItems +
+                                    if (expandedRow != null && expandedRow < index) 1 else 0
                                 scope.launch { listState.scrollToItem(target) }
                             }
                         },

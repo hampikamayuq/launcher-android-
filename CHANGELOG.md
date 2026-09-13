@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.0 — Fase 5: widgets
+
+- Widgets acima da lista de apps, largura total, altura em células de 72 dp;
+  rolam junto com a lista.
+- Pilha de widgets: vários no mesmo espaço com swipe horizontal e pontos.
+- Botão de edição em cada widget: altura (−/+, dentro dos limites do
+  provedor), mover para cima/baixo, adicionar à pilha, remover.
+- Seletor agrupado por app com preview e altura mínima; o sistema pede a
+  autorização de widgets uma única vez (`ACTION_APPWIDGET_BIND`) e a
+  configuração do provedor quando exigida.
+- Seção Widgets nas configurações com a lista dos slots.
+- Restauração após backup: os ids realocados pelo sistema são remapeados
+  (`APPWIDGET_HOST_RESTORED`); layout corrompido volta ao vazio em vez de
+  derrubar a home.
+- 140 testes de unidade por variante (22 novos: layout de slots e pilhas).
+
 ## 0.5.0 — Fase 4: notificações na lista
 
 - Acesso a notificações concedido na tela do sistema (Android 11+ abre direto

@@ -46,6 +46,9 @@ import app.cascata.launcher.data.notifications.NotificationSettings
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.ThemeSettings
+import app.cascata.launcher.data.widgets.WidgetHostManager
+import app.cascata.launcher.data.widgets.WidgetLayout
+import app.cascata.launcher.data.widgets.WidgetPrefs
 import app.cascata.launcher.ui.theme.CascataTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.onStart
@@ -72,6 +75,8 @@ class SettingsActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = GlanceSettings.DEFAULT)
             val notifications by app.notificationPrefs.settings
                 .collectAsStateWithLifecycle(initialValue = NotificationSettings.DEFAULT)
+            val widgets by app.widgetPrefs.layout
+                .collectAsStateWithLifecycle(initialValue = WidgetLayout.EMPTY)
 
             // O acesso a notificações é concedido numa tela do sistema: nada
             // avisa quando ele muda, então relemos ao voltar para cá.
@@ -101,6 +106,7 @@ class SettingsActivity : ComponentActivity() {
                     settings = settings,
                     glance = glance,
                     notifications = notifications,
+                    widgets = widgets,
                     hasListenerAccess = listenerAccess,
                     customFont = customFont,
                     themePrefs = app.themePrefs,
@@ -110,6 +116,8 @@ class SettingsActivity : ComponentActivity() {
                     weatherCache = app.weatherCache,
                     notificationPrefs = app.notificationPrefs,
                     notificationAccess = app.notificationAccess,
+                    widgetHost = app.widgetHost,
+                    widgetPrefs = app.widgetPrefs,
                     appRepository = app.appRepository,
                     fontStore = app.fontStore,
                     iconPacks = app.iconPacks,
@@ -130,6 +138,7 @@ private fun SettingsScreen(
     settings: ThemeSettings,
     glance: GlanceSettings,
     notifications: NotificationSettings,
+    widgets: WidgetLayout,
     hasListenerAccess: Boolean,
     customFont: File?,
     themePrefs: ThemePrefs,
@@ -139,6 +148,8 @@ private fun SettingsScreen(
     weatherCache: WeatherCache,
     notificationPrefs: NotificationPrefs,
     notificationAccess: NotificationAccess,
+    widgetHost: WidgetHostManager,
+    widgetPrefs: WidgetPrefs,
     appRepository: AppRepository,
     fontStore: FontStore,
     iconPacks: IconPackRepository,
@@ -189,6 +200,12 @@ private fun SettingsScreen(
                 prefs = notificationPrefs,
                 access = notificationAccess,
                 hasAccess = hasListenerAccess,
+                repository = appRepository,
+            )
+            WidgetsSection(
+                layout = widgets,
+                host = widgetHost,
+                prefs = widgetPrefs,
                 repository = appRepository,
             )
             FontSection(

@@ -158,6 +158,29 @@
     <string name="media_pause">Pausar</string>
     <string name="media_next">Próxima faixa</string>
 
+    <string name="section_widgets">Widgets</string>
+    <string name="widget_add">Adicionar widget…</string>
+    <string name="widget_picker_title">Adicionar widget</string>
+    <string name="widget_picker_empty">Nenhum app instalado oferece widgets.</string>
+    <string name="widget_unavailable">Widget indisponível</string>
+    <string name="widget_remove">Remover</string>
+    <string name="widget_edit">Editar widget</string>
+    <string name="widget_slot_title">Widget</string>
+    <string name="widget_height">Altura</string>
+    <string name="widget_height_decrease">Diminuir a altura</string>
+    <string name="widget_height_increase">Aumentar a altura</string>
+    <string name="widget_move_up">Mover para cima</string>
+    <string name="widget_move_down">Mover para baixo</string>
+    <string name="widget_add_to_stack">Adicionar à pilha</string>
+    <string name="widget_stack_position">Widget %1$d de %2$d</string>
+    <plurals name="widget_cells">
+        <item quantity="one">%1$d célula</item>
+        <item quantity="other">%1$d células</item>
+    </plurals>
+    <string name="widgets_none">Nenhum widget na tela inicial</string>
+    <string name="widgets_not_default">O Cascata não é a tela inicial padrão: o sistema pode pedir autorização ao adicionar o primeiro widget.</string>
+    <string name="widgets_footer">Os widgets aparecem acima da lista de apps. Toque no ícone no canto de cada um para redimensionar, empilhar ou mover.</string>
+
     <string name="section_font">Fonte</string>
     <string name="font_system">Do sistema</string>
     <string name="font_custom">Personalizada…</string>
