@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,10 +55,14 @@ import app.cascata.launcher.data.glance.AlarmSource
 import app.cascata.launcher.data.glance.BatterySource
 import app.cascata.launcher.data.glance.CalendarSource
 import app.cascata.launcher.data.glance.GlanceSettings
+import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
+import app.cascata.launcher.data.notifications.BadgeStyle
 import app.cascata.launcher.data.theme.ClockStyle
 import app.cascata.launcher.ui.clock.ClockHeader
 import app.cascata.launcher.ui.glance.GlanceRow
+import app.cascata.launcher.ui.notifications.NotificationBadge
+import app.cascata.launcher.ui.notifications.NotificationInline
 import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
 import app.cascata.launcher.ui.theme.LocalLauncherDensity
 import app.cascata.launcher.ui.theme.iconSize
@@ -81,9 +86,15 @@ fun HomeScreen(
     batterySource: BatterySource,
     calendarSource: CalendarSource,
     weatherSource: WeatherSource,
+    mediaSource: MediaSource,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Já vem filtrado por silenciados e pelo recurso desligado: mapa vazio é o
+    // caso normal de quem nunca ligou as notificações.
+    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val notificationSettings by viewModel.notificationSettings.collectAsStateWithLifecycle()
+    val notificationsConnected by viewModel.notificationsConnected.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -101,6 +112,25 @@ fun HomeScreen(
 
     var contextApp by remember { mutableStateOf<AppEntry?>(null) }
     var showHidden by remember { mutableStateOf(false) }
+
+    // Um app expandido por vez. `expanded` é o que o usuário pediu; `mounted` é
+    // o que ainda ocupa um item da lista — só sai quando a animação de recolher
+    // termina, senão ela não teria onde acontecer.
+    var expandedAppKey by remember { mutableStateOf<String?>(null) }
+    var mountedAppKey by remember { mutableStateOf<String?>(null) }
+
+    // Buscar troca as linhas debaixo do bloco: recolhe antes de a lista virar outra.
+    LaunchedEffect(state.query) { expandedAppKey = null }
+
+    // Dispensou a última notificação do app: não sobrou bloco para mostrar, e
+    // não há o que animar — os dois estados saem juntos.
+    LaunchedEffect(notifications, expandedAppKey) {
+        val open = expandedAppKey
+        if (open != null && notifications[open].isNullOrEmpty()) {
+            expandedAppKey = null
+            mountedAppKey = null
+        }
+    }
 
     // Voltar limpa a busca. Sem busca não faz nada: aqui já é a tela inicial.
     BackHandler(enabled = state.query.isNotEmpty()) {
@@ -130,6 +160,8 @@ fun HomeScreen(
                 batterySource = batterySource,
                 calendarSource = calendarSource,
                 weatherSource = weatherSource,
+                mediaSource = mediaSource,
+                showMedia = notificationSettings.showMedia && notificationsConnected,
             )
 
             OutlinedTextField(
@@ -163,6 +195,21 @@ fun HomeScreen(
                 )
             }
 
+            // O bloco de notificações é um item da lista, não um filho da linha:
+            // assim a LazyColumn mede e recicla os dois separadamente, e a
+            // animação de abrir não estica a altura de uma linha reciclada. O
+            // preço é este deslocamento — tudo que vem depois do bloco anda uma
+            // posição, inclusive o alvo do índice alfabético.
+            val expandedNotifications = mountedAppKey?.let { notifications[it] }.orEmpty()
+            val expandedRow = mountedAppKey
+                ?.takeIf { expandedNotifications.isNotEmpty() }
+                ?.let { key -> state.rows.indexOfFirst { it is UiRow.App && it.entry.appKey == key } }
+                ?.takeIf { it >= 0 }
+            val notificationItem = expandedRow?.plus(1)
+            val rowIndexOf: (Int) -> Int = { item ->
+                if (expandedRow == null || item <= expandedRow) item else item - 1
+            }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     state = listState,
@@ -173,23 +220,62 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     items(
-                        count = state.rows.size,
+                        count = state.rows.size + if (expandedRow != null) 1 else 0,
                         key = { index ->
-                            when (val row = state.rows[index]) {
-                                is UiRow.Header -> "header-${row.letter}"
-                                is UiRow.App -> row.entry.key
+                            if (index == notificationItem) {
+                                "notif-$mountedAppKey"
+                            } else {
+                                when (val row = state.rows[rowIndexOf(index)]) {
+                                    is UiRow.Header -> "header-${row.letter}"
+                                    is UiRow.App -> row.entry.key
+                                }
                             }
                         },
                         contentType = { index ->
-                            if (state.rows[index] is UiRow.Header) "header" else "app"
+                            when {
+                                index == notificationItem -> "notifications"
+                                state.rows[rowIndexOf(index)] is UiRow.Header -> "header"
+                                else -> "app"
+                            }
                         },
                     ) { index ->
-                        when (val row = state.rows[index]) {
+                        if (index == notificationItem) {
+                            val entry = (state.rows[rowIndexOf(index)] as? UiRow.App)?.entry
+                            NotificationInline(
+                                appLabel = entry?.label.orEmpty(),
+                                notifications = expandedNotifications,
+                                expanded = expandedAppKey == mountedAppKey,
+                                onOpen = { viewModel.onOpenNotification(it) },
+                                onDismiss = viewModel::onDismissNotification,
+                                onDismissAll = { mountedAppKey?.let(viewModel::onDismissAll) },
+                                onFireAction = { viewModel.onFireAction(it) },
+                                onReply = viewModel::onReply,
+                                onCollapse = { expandedAppKey = null },
+                                // Recolheu de verdade: agora o item pode sair da lista.
+                                onCollapsed = { if (expandedAppKey == null) mountedAppKey = null },
+                            )
+                            return@items
+                        }
+                        when (val row = state.rows[rowIndexOf(index)]) {
                             is UiRow.Header -> SectionHeader(row.letter)
                             is UiRow.App -> AppRow(
                                 entry = row.entry,
                                 favorite = row.favorite,
                                 repository = repository,
+                                notificationCount = notifications[row.entry.appKey]?.size ?: 0,
+                                badgeStyle = notificationSettings.badgeStyle,
+                                onBadgeClick = {
+                                    // Sem expansão inline o indicador é só mais
+                                    // um lugar por onde abrir o app.
+                                    if (!notificationSettings.expandInline) {
+                                        repository.launch(row.entry)
+                                    } else if (expandedAppKey == row.entry.appKey) {
+                                        expandedAppKey = null
+                                    } else {
+                                        mountedAppKey = row.entry.appKey
+                                        expandedAppKey = row.entry.appKey
+                                    }
+                                },
                                 onLongPress = { contextApp = row.entry },
                             )
                         }
@@ -211,7 +297,10 @@ fun HomeScreen(
                         letters = state.sectionIndex.keys.toList(),
                         onLetterFocused = { letter ->
                             state.sectionIndex[letter]?.let { index ->
-                                scope.launch { listState.scrollToItem(index) }
+                                // Índice da linha -> índice do item: o bloco
+                                // aberto acima do destino vale uma posição.
+                                val target = index + if (expandedRow != null && expandedRow < index) 1 else 0
+                                scope.launch { listState.scrollToItem(target) }
                             }
                         },
                         modifier = Modifier.align(Alignment.CenterEnd),
@@ -277,6 +366,9 @@ private fun AppRow(
     entry: AppEntry,
     favorite: Boolean,
     repository: AppRepository,
+    notificationCount: Int,
+    badgeStyle: BadgeStyle,
+    onBadgeClick: () -> Unit,
     onLongPress: () -> Unit,
 ) {
     val density = LocalLauncherDensity.current
@@ -314,6 +406,13 @@ private fun AppRow(
             Spacer(Modifier.width(6.dp))
             Text(text = "•", color = MaterialTheme.colorScheme.primary)
         }
+        // O indicador tem toque próprio (expandir); o resto da linha abre o app.
+        NotificationBadge(
+            count = notificationCount,
+            style = badgeStyle,
+            appLabel = entry.label,
+            onClick = onBadgeClick,
+        )
     }
 }
 

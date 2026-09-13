@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 — Fase 4: notificações na lista
+
+- Acesso a notificações concedido na tela do sistema (Android 11+ abre direto
+  na chave do Cascata); o serviço só existe depois disso.
+- Indicador na linha do app: contador ou ponto. Tocar expande as notificações
+  daquele app na própria lista: título, texto, hora relativa, ações, resposta
+  direta (`RemoteInput`), dispensar uma ou todas.
+- Agrupamento por app e por `groupKey`: o resumo some quando há filhos.
+- Silenciar por app; opção de não expandir na lista.
+- Card de mídia no at-a-glance (título, artista, anterior / play-pause / próxima).
+- Nada de notificação é gravado: tudo em memória enquanto está na barra.
+- 118 testes de unidade por variante (32 novos: extração de texto por estilo,
+  agrupamento, preferências, hora relativa).
+
 ## 0.4.0 — Fase 3: at a glance
 
 - Duas edições do mesmo app: `lite` (sem `INTERNET`) e `full` (clima). Mesmo

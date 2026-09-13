@@ -53,6 +53,7 @@ import app.cascata.launcher.data.glance.BatterySource
 import app.cascata.launcher.data.glance.CalendarEvent
 import app.cascata.launcher.data.glance.CalendarSource
 import app.cascata.launcher.data.glance.GlanceSettings
+import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -62,7 +63,7 @@ import java.util.Date
 import java.util.Locale
 
 /** Quanto do `surfaceVariant` fica: o chip precisa se separar do fundo sem virar botão. */
-private const val CHIP_ALPHA = 0.7f
+internal const val CHIP_ALPHA = 0.7f
 
 /** Lado do ícone dentro do chip. */
 internal val CHIP_ICON = 18.dp
@@ -84,11 +85,16 @@ fun GlanceRow(
     batterySource: BatterySource,
     calendarSource: CalendarSource,
     weatherSource: WeatherSource,
+    mediaSource: MediaSource,
+    /** Card de mídia ligado *e* serviço de notificações conectado — sem o acesso não há sessão. */
+    showMedia: Boolean,
     modifier: Modifier = Modifier,
 ) {
     // O clima depende da edição: no `lite` a fonte existe, mas não sabe buscar.
     val showWeather = settings.showWeather && weatherSource.available
-    if (!settings.showAlarm && !settings.showBattery && !settings.showCalendar && !showWeather) {
+    if (!settings.showAlarm && !settings.showBattery && !settings.showCalendar &&
+        !showWeather && !showMedia
+    ) {
         return
     }
 
@@ -101,6 +107,7 @@ fun GlanceRow(
         if (settings.showBattery) BatteryChip(batterySource)
         if (settings.showCalendar) CalendarChip(calendarSource)
         if (showWeather) WeatherChip(weatherSource, settings.temperatureUnit)
+        if (showMedia) MediaChip(mediaSource)
     }
 }
 

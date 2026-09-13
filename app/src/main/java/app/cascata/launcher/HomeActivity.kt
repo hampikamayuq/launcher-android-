@@ -23,7 +23,15 @@ class HomeActivity : ComponentActivity() {
 
     private val viewModel: HomeViewModel by viewModels {
         val app = application as CascataApp
-        HomeViewModel.Factory(app.appRepository, app.launcherPrefs)
+        HomeViewModel.Factory(
+            app.appRepository,
+            app.launcherPrefs,
+            app.notificationStore,
+            app.notificationPrefs,
+            // Contexto da aplicação: a resposta direta dispara um PendingIntent
+            // que pode sobreviver a esta Activity.
+            applicationContext,
+        )
     }
 
     /**
@@ -71,6 +79,7 @@ class HomeActivity : ComponentActivity() {
                     batterySource = app.batterySource,
                     calendarSource = app.calendarSource,
                     weatherSource = app.weatherSource,
+                    mediaSource = app.mediaSource,
                 )
             }
         }

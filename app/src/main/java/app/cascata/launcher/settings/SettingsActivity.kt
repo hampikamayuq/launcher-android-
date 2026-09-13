@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cascata.launcher.CascataApp
 import app.cascata.launcher.R
@@ -37,7 +38,11 @@ import app.cascata.launcher.data.glance.GlancePrefs
 import app.cascata.launcher.data.glance.GlanceSettings
 import app.cascata.launcher.data.glance.weather.WeatherCache
 import app.cascata.launcher.data.glance.weather.WeatherSource
+import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.iconpack.IconPackRepository
+import app.cascata.launcher.data.notifications.NotificationAccess
+import app.cascata.launcher.data.notifications.NotificationPrefs
+import app.cascata.launcher.data.notifications.NotificationSettings
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.ThemeSettings
@@ -65,6 +70,16 @@ class SettingsActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = ThemeSettings.DEFAULT)
             val glance by app.glancePrefs.settings
                 .collectAsStateWithLifecycle(initialValue = GlanceSettings.DEFAULT)
+            val notifications by app.notificationPrefs.settings
+                .collectAsStateWithLifecycle(initialValue = NotificationSettings.DEFAULT)
+
+            // O acesso a notificações é concedido numa tela do sistema: nada
+            // avisa quando ele muda, então relemos ao voltar para cá.
+            var listenerAccess by remember { mutableStateOf(false) }
+            LifecycleResumeEffect(Unit) {
+                listenerAccess = app.notificationAccess.hasListenerAccess()
+                onPauseOrDispose { }
+            }
 
             // Arquivo, não preferência: quem importa ou remove avisa por aqui.
             var customFont by remember { mutableStateOf(app.fontStore.customFile()) }
@@ -85,12 +100,17 @@ class SettingsActivity : ComponentActivity() {
                 SettingsScreen(
                     settings = settings,
                     glance = glance,
+                    notifications = notifications,
+                    hasListenerAccess = listenerAccess,
                     customFont = customFont,
                     themePrefs = app.themePrefs,
                     glancePrefs = app.glancePrefs,
                     calendarSource = app.calendarSource,
                     weatherSource = app.weatherSource,
                     weatherCache = app.weatherCache,
+                    notificationPrefs = app.notificationPrefs,
+                    notificationAccess = app.notificationAccess,
+                    appRepository = app.appRepository,
                     fontStore = app.fontStore,
                     iconPacks = app.iconPacks,
                     onCustomFontChanged = { customFont = app.fontStore.customFile() },
@@ -109,12 +129,17 @@ typealias UpdateSettings = ((ThemeSettings) -> ThemeSettings) -> Unit
 private fun SettingsScreen(
     settings: ThemeSettings,
     glance: GlanceSettings,
+    notifications: NotificationSettings,
+    hasListenerAccess: Boolean,
     customFont: File?,
     themePrefs: ThemePrefs,
     glancePrefs: GlancePrefs,
     calendarSource: CalendarSource,
     weatherSource: WeatherSource,
     weatherCache: WeatherCache,
+    notificationPrefs: NotificationPrefs,
+    notificationAccess: NotificationAccess,
+    appRepository: AppRepository,
     fontStore: FontStore,
     iconPacks: IconPackRepository,
     onCustomFontChanged: () -> Unit,
@@ -158,6 +183,13 @@ private fun SettingsScreen(
                 weatherSource = weatherSource,
                 weatherCache = weatherCache,
                 update = update,
+            )
+            NotificationsSection(
+                settings = notifications,
+                prefs = notificationPrefs,
+                access = notificationAccess,
+                hasAccess = hasListenerAccess,
+                repository = appRepository,
             )
             FontSection(
                 settings = settings,

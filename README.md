@@ -12,10 +12,12 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.4.0 — Fases 1 a 3 concluídas)
+## Estado atual (v0.5.0 — Fases 1 a 4 concluídas)
 
 | | |
 |---|---|
+| Notificações na lista: badge por app, expansão inline com ações e resposta direta | ✅ |
+| Card de mídia com controles | ✅ |
 | Relógio em 4 estilos (básico, dígitos grandes, duas linhas, analógico) | ✅ |
 | Cards: próximo alarme, bateria, próximo evento, clima (edição `full`) | ✅ |
 | Cada card liga sozinho e pede só a sua permissão | ✅ |
@@ -38,7 +40,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| Notificações, widgets | próximas fases ([plano](docs/plano.md)) |
+| Widgets | próxima fase ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -68,10 +70,13 @@ base: é o custo de um launcher funcional antes de qualquer gordura.
   cache de 30 min). Mesmo `applicationId`: instala-se uma **ou** outra.
 - **Nada de analytics ou conta.** Zero dependências de Firebase, Play Services
   ou SDK de atribuição. Fora o clima na edição `full`, o app não abre socket.
+- **Notificações vivem só na memória.** O acesso ao listener é concedido pelo
+  usuário na tela do sistema; o serviço nem é instanciado antes disso. Nenhum
+  título, texto, chave ou horário de notificação é gravado — o DataStore guarda
+  apenas as preferências (silenciados, estilo do indicador).
 - **O que é persistido:** favoritos, apps ocultos, apelidos, as preferências de
-  aparência e dos cards, e o último clima, em DataStores; mais a fonte
-  importada, se houver. Sem histórico de uso, sem metadados de notificação,
-  sem banco.
+  aparência, dos cards e de notificações, e o último clima, em DataStores; mais
+  a fonte importada, se houver. Sem histórico de uso, sem banco.
 - **Regras de backup separadas por canal:** `cloud-backup` e `device-transfer`
   são declarados um a um, em vez de repetir o mesmo bloco nos dois.
 - **Sem framework de injeção.** As dependências são três objetos criados sob
@@ -95,17 +100,25 @@ Requisitos: JDK 17+, Android SDK com `platforms;android-36` e `build-tools;36.0.
 
 ```
 app/src/main/java/app/cascata/launcher/
-├── CascataApp.kt          # dependências da aplicação
-├── HomeActivity.kt        # a home (MAIN + HOME + LAUNCHER)
-├── HomeViewModel.kt       # estado da tela: linhas, seções, busca
+├── CascataApp.kt              # dependências da aplicação, criadas sob demanda
+├── HomeActivity.kt            # a home (MAIN + HOME + LAUNCHER)
+├── HomeViewModel.kt           # estado da tela, notificações, ações
+├── HomeStateBuilder.kt        # seções, busca e reordenação — lógica pura
 ├── data/
-│   ├── AppEntry.kt        # modelo + normalização de rótulo
-│   ├── AppRepository.kt   # LauncherApps, ícones, mudanças de pacote
-│   └── FavoritesStore.kt  # DataStore de favoritos
+│   ├── AppEntry.kt, AppRepository.kt, LauncherPrefs.kt, PrefsCodec.kt
+│   ├── theme/                 # ThemeSettings, ThemePrefs, ThemeFile, SeedPalette,
+│   │                          # WallpaperColorsSource, FontStore
+│   ├── iconpack/              # pacotes no formato aberto (appfilter.xml)
+│   ├── glance/                # alarme, bateria, agenda, mídia, weather/
+│   └── notifications/         # store em memória, texto, agrupamento, prefs
+├── notifications/             # CascataNotificationListener (bind só do sistema)
+├── settings/                  # tela de configurações, uma seção por arquivo
 └── ui/
-    ├── HomeScreen.kt      # lista, busca, favoritos, menu de contexto
-    ├── AlphabetIndex.kt   # índice lateral arrastável
-    ├── AppIcon.kt         # rasterização de ícone fora da main thread
-    ├── ClockHeader.kt     # relógio e data
-    └── theme/Theme.kt     # Material You com fallback próprio
+    ├── HomeScreen.kt, AlphabetIndex.kt, AppIcon.kt, FavoritesRow.kt, sheets…
+    ├── clock/                 # quatro estilos de relógio
+    ├── glance/                # chips do topo
+    ├── notifications/         # badge e expansão inline
+    └── theme/                 # CascataTheme, Fonts
+app/src/full/                  # clima Open-Meteo + INTERNET/COARSE_LOCATION
+app/src/lite/                  # stub de clima; edição sem rede
 ```

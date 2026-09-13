@@ -110,6 +110,54 @@
     <!-- Rótulo do serviço na lista de acesso a notificações do sistema. -->
     <string name="notification_listener_label">Notificações do Cascata</string>
 
+    <string name="section_notifications">Notificações</string>
+    <string name="notifications_enabled">Notificações na lista</string>
+    <string name="notifications_access_granted">Acesso concedido</string>
+    <string name="notifications_access_missing">Toque para conceder o acesso nas configurações do sistema</string>
+    <string name="notifications_access_revoke">Para revogar o acesso, use as configurações do sistema</string>
+    <string name="notifications_access_open">Abrir</string>
+    <string name="notifications_badge_style">Indicador</string>
+    <string name="notifications_badge_count">Contador</string>
+    <string name="notifications_badge_dot">Ponto</string>
+    <string name="notifications_expand_inline">Expandir na lista</string>
+    <string name="notifications_show_media">Card de mídia</string>
+    <string name="notifications_muted">Apps silenciados</string>
+    <string name="notifications_muted_none">Nenhum</string>
+    <plurals name="notifications_muted_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <string name="notifications_footer">As notificações ficam só na memória enquanto estão na barra do sistema. Nada é gravado.</string>
+
+    <!-- Só o número dentro do círculo do indicador. -->
+    <string name="notification_badge_number">%1$d</string>
+    <string name="notification_badge_overflow">9+</string>
+    <plurals name="notification_badge_description">
+        <item quantity="one">%1$d notificação de %2$s</item>
+        <item quantity="other">%1$d notificações de %2$s</item>
+    </plurals>
+    <string name="notification_dismiss">Dispensar</string>
+    <string name="notification_dismiss_all">Dispensar todas</string>
+    <string name="notification_reply_hint">Responder</string>
+    <string name="notification_reply_send">Enviar resposta</string>
+    <!--
+      Abreviações de tempo: "min", "h" e "d" não flexionam com a quantidade em
+      português ("1 min", "2 min"), daí não serem plurals apesar do palpite do lint.
+    -->
+    <string name="notification_time_now">agora</string>
+    <string name="notification_time_minutes" tools:ignore="PluralsCandidate">%1$d min</string>
+    <string name="notification_time_hours" tools:ignore="PluralsCandidate">%1$d h</string>
+    <string name="notification_time_yesterday">ontem</string>
+    <string name="notification_time_days" tools:ignore="PluralsCandidate">%1$d d</string>
+
+    <string name="media_untitled">Mídia</string>
+    <string name="media_description">Tocando: %1$s, %2$s</string>
+    <string name="media_description_title">Tocando: %1$s</string>
+    <string name="media_previous">Faixa anterior</string>
+    <string name="media_play">Tocar</string>
+    <string name="media_pause">Pausar</string>
+    <string name="media_next">Próxima faixa</string>
+
     <string name="section_font">Fonte</string>
     <string name="font_system">Do sistema</string>
     <string name="font_custom">Personalizada…</string>
