@@ -8,6 +8,10 @@ O projeto nasceu de uma [análise técnica do Niagara Launcher](docs/analise-nia
 — o conceito de navegação serviu de inspiração; nenhuma linha de código, asset ou
 tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/inspiracao-e-licencas.md).
 
+## Plano
+
+O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
+
 ## Estado atual (v0.1.0)
 
 | | |
