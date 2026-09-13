@@ -29,16 +29,18 @@ maiúsculas/minúsculas. Resultado da comparação entrada a entrada:
 | Arquivos | 1.834 | 1.497 |
 | Idênticos ao oficial | — | 1.211 |
 | **Com conteúdo trocado** (colisão sobrescreveu) | — | **285** |
-| **Ausentes** | — | **337** |
+| **Ausentes** | — | **338** |
 | Extras que não existem no APK | — | 1 |
 
 Ou seja, ~1 em cada 5 recursos do ZIP tem o conteúdo de *outro* recurso (`res/-A.xml` carrega o
-conteúdo de `res/-a.xml`, e assim por diante), e 337 arquivos simplesmente não estão lá — entre
-eles o `dataExtractionRules`. O arquivo extra é
+conteúdo de `res/-a.xml`, e assim por diante), e 338 arquivos simplesmente não estão lá (332 XML
+de recurso, 4 PNG e os dois `third_party_licenses.json`/`.txt` do ML Kit) — entre eles o
+`dataExtractionRules`. O arquivo extra é
 `META-INF/third_party_licenses/com.google.mlkit/genai-schema/third_party_licenses.docx`: um
 documento Word com o texto do `third_party_licenses.txt` do ML Kit, gerado por alguma ferramenta
 de conversão fora do APK (timestamp distinto dos demais). **Não use esse ZIP como fonte de
-recursos** — só os arquivos grandes (DEX, ARSC, manifesto) sobreviveram intactos.
+recursos** — só os arquivos grandes (DEX, ARSC, manifesto) sobreviveram intactos. A partir da
+seção 3, tudo que envolve `res/` foi relido do **APK oficial completo**, não do ZIP.
 
 **Ressalva remanescente: o código está ofuscado (R8).** 11.455 das 12.713 classes foram
 reempacotadas em `b.*` com nomes gerados e os metadados Kotlin foram removidos. A leitura de
@@ -58,8 +60,10 @@ reflexão ou por serialização) e nas strings — não em decompilação comple
 | Publicação | 09/09, release assinado por `Maxr1998-bot` no repo `NiagaraLauncher/Niagara-Issues` |
 | Classes / métodos / campos (DEX) | 12.713 / 63.093 / 44.917 |
 | DEX | `classes.dex` (10,7 MB) + `classes2.dex` (1 KB, só `j$.time.DesugarDuration`) |
-| Recursos | 1.446 arquivos em `res/`, `resources.arsc` de 5,2 MB, 46.346 strings |
-| Idiomas | 116 locales (de `af` a `zu`) |
+| Tamanho | 13,4 MB (14.022.793 bytes) para 21,7 MB descomprimidos, em 1.834 entradas |
+| Recursos | 1.782 arquivos em `res/` (1.573 XML, 153 PNG, 28 WebP, 12 Lottie JSON, 9 TTF, 5 MP3 + 2 WAV), `resources.arsc` de 5,2 MB com 46.346 strings |
+| Assets | só `dexopt/baseline.prof(m)` e `PublicSuffixDatabase.list` (OkHttp) — nenhuma base de dados embutida |
+| Idiomas | 116 qualificadores de locale nos recursos; 37 idiomas no `locale-config` (seletor por app do Android 13+) |
 | ABIs nativas | armeabi-v7a, arm64-v8a, x86, x86_64 — apenas `libandroidx.graphics.path.so` e `libdatastore_shared_counter.so` (~96 KB total) |
 | Otimizações | R8 com repackaging, `extractNativeLibs=false`, Baseline Profile em `assets/dexopt/` |
 
@@ -124,11 +128,30 @@ esse caso de uso.
 
 ### 3.4 Backup
 
-`allowBackup=true`. As regras (`res/fB.xml`) incluem `database/.` (exceto `leaks.db`),
-`sharedpref/.` e `file/fonts` (exceto `fonts/no-backup` e `fonts/remote`). Ou seja, o banco
-local — que inclui histórico de uso e metadados de notificação (§6) — entra no backup do
-Android. O `dataExtractionRules` (que separa backup em nuvem de transferência device-to-device
-no Android 12+) está declarado, mas o arquivo se perdeu na colisão de nomes da extração.
+`allowBackup=true`. As regras legadas (`res/fb.xml`, Android ≤ 11) incluem `database/.` (exceto
+`leaks.db`), `sharedpref/.` e `file/fonts` (exceto `fonts/no-backup` e `fonts/remote`).
+
+O `dataExtractionRules` (Android 12+), recuperado do APK completo (`res/Qq.xml`), repete
+**exatamente o mesmo conjunto nos dois canais** — `<cloud-backup>` e `<device-transfer>`:
+
+```xml
+<include domain="database" path="."/>      <exclude domain="database" path="leaks.db"/>
+<include domain="file" path="fonts"/>      <exclude domain="file" path="fonts/no-backup"/>
+<include domain="sharedpref" path="."/>    <exclude domain="file" path="fonts/remote"/>
+```
+
+Ou seja: o banco local inteiro — incluindo o histórico de uso por app e os metadados de
+notificação (§6) — vai tanto para o **backup em nuvem** quanto para a **transferência entre
+dispositivos**. A única exclusão é `leaks.db` (LeakCanary) e caches de fontes. É a configuração
+mais permissiva possível dentro do que o app guarda; separar os dois canais (por exemplo,
+deixando o histórico de uso fora do backup em nuvem) seria a melhoria óbvia.
+
+### 3.5 Configuração de rede
+
+Não há `networkSecurityConfig`, nem `usesCleartextTraffic`, nem `android:debuggable` no
+manifesto — o app fica nos padrões do `targetSdk 36`, o que significa **tráfego em texto claro
+bloqueado por padrão** e nenhuma âncora de confiança customizada. Também não há `<shortcuts>`
+estáticos nem `<appwidget-provider>`: o launcher consome widgets, não fornece nenhum.
 
 ## 4. Arquitetura e stack
 
@@ -274,16 +297,21 @@ verificar, não vulnerabilidades comprovadas — confirmá-las exigiria decompil
 3. **`niagara://secret-command`** é alcançável por qualquer app e por página web (via App Link).
    Existe confirmação, mas também uma chave para pulá-la — a força dessa chave e o conjunto de
    comandos disponíveis determinam o risco real.
-4. **`allowBackup=true` incluindo o banco** com histórico de uso; em dispositivos com ADB
-   habilitado ou backup em nuvem, esses dados saem do aparelho.
+4. **`allowBackup=true` incluindo o banco** com histórico de uso — e, confirmado no APK completo
+   (§3.4), o `dataExtractionRules` aplica o mesmo conjunto ao backup em nuvem **e** à
+   transferência entre dispositivos, sem distinção. Em aparelhos com ADB habilitado ou com
+   backup do Google ativo, esses dados saem do dispositivo.
 5. **libsu embutida.** Se root for de fato usado (e não só detectado), a execução de shell
    privilegiado num launcher merece revisão dedicada.
 6. **Cronet vindo do Play Services** — comportamento de TLS/rede depende de um componente
    externo atualizável; positivo para correções, mas fora do controle do app.
 
 Do lado positivo: serviço de acessibilidade minimamente escopado, notificações sem persistência
-de conteúdo, telemetria desligada por padrão, R8 com repackaging, sem bibliotecas nativas de
-terceiros, sem SDK de anúncios, sem WebView exposta no manifesto.
+de conteúdo, telemetria desligada por padrão, R8 com repackaging, assinatura v2 com certificado
+próprio de longa validade, tráfego em texto claro bloqueado pelos padrões do targetSdk 36 (§3.5),
+nenhuma âncora de confiança customizada, sem bibliotecas nativas de terceiros, sem SDK de
+anúncios, sem WebView exposta no manifesto e nenhum dado embutido nos assets — os 12 JSON do APK
+são todos animações Lottie.
 
 ## 9. Conferência com as notas do release oficial
 
@@ -294,7 +322,8 @@ As notas de v1.16.28 anunciam duas mudanças; ambas se confirmam no binário:
   permissão `CAMERA`** — coerente com a lista de permissões do §3.1, onde `CAMERA` não aparece).
   Recursos associados: `flashlight_on_tip`, `flashlight_on_tip_button`, estado `FLASHLIGHT_ON`,
   já traduzidos ("Flashlight is on", "Die Taschenlampe ist an", "A lanterna está…").
-- **"Translation Updates" (Crowdin)** — coerente com os 116 locales empacotados (§2).
+- **"Translation Updates" (Crowdin)** — coerente com os 116 qualificadores de locale
+  empacotados e os 37 idiomas expostos no `locale-config` (§2).
 
 Sendo um "minor update" de duas linhas, nada do que está descrito nas seções 3 a 8 é novidade
 desta versão: é a superfície acumulada do app.
@@ -308,5 +337,10 @@ descomprimido — a diferença em relação a um ZIP recomprimido vem do `resour
 Para ir além do que está aqui seria necessário decompilar `classes.dex` (jadx/dex2jar) e
 reconstruir o pacote `b.*` para (a) confirmar o uso real de root, (b) mapear os endpoints do
 backend e o formato dos tokens, (c) auditar a validação de chamador nos providers exportados e
-(d) listar os "secret commands". A verificação de integridade/autoria, que era a outra lacuna,
-está feita (§1).
+(d) listar os "secret commands".
+
+As outras duas lacunas já foram fechadas com o APK oficial completo: a verificação de
+integridade/autoria (§1) e os recursos que faltavam no ZIP — entre eles o `dataExtractionRules`
+(§3.4), o `locale-config` e a confirmação de que não existe configuração de rede customizada
+(§3.5). Nenhum dos 338 arquivos ausentes continha lógica: são 332 XML de recurso (vetores,
+seletores, animações e layouts), 4 PNG e 2 arquivos de licença do ML Kit.
