@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Três traços em cascata, de cima para baixo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F2F6FF"
+        android:pathData="M38,36h32a4,4 0,0 1,0 8h-32a4,4 0,0 1,0 -8z" />
+    <path
+        android:fillColor="#9EC1FF"
+        android:pathData="M38,50h24a4,4 0,0 1,0 8h-24a4,4 0,0 1,0 -8z" />
+    <path
+        android:fillColor="#5B8DEF"
+        android:pathData="M38,64h14a4,4 0,0 1,0 8h-14a4,4 0,0 1,0 -8z" />
+</vector>

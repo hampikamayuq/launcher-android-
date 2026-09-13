@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Cascata" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+      A home fica por cima do papel de parede: janela translúcida, sem fundo e
+      sem animação de entrada, para o launcher aparecer instantâneo.
+    -->
+    <style name="Theme.Cascata.Home" parent="Theme.Cascata">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

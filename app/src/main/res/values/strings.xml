@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cascata</string>
+    <string name="search_hint">Buscar apps</string>
+    <string name="search_open">Abrir busca</string>
+    <string name="search_close">Fechar busca</string>
+    <string name="search_clear">Limpar busca</string>
+    <string name="favorites">Favoritos</string>
+    <string name="pin">Fixar nos favoritos</string>
+    <string name="unpin">Remover dos favoritos</string>
+    <string name="app_info">Informações do app</string>
+    <string name="uninstall">Desinstalar</string>
+    <string name="empty_search">Nenhum app para “%1$s”</string>
+    <string name="jump_to_letter">Ir para a letra %1$s</string>
+    <string name="alphabet_index">Índice alfabético</string>
+</resources>
