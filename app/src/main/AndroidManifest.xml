@@ -63,6 +63,23 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!--
+          Configurações. Não exportada: quem abre é a própria home. O filtro de
+          APPLICATION_PREFERENCES existe para o sistema saber que este app tem
+          uma tela de preferências, e é o caminho que as configurações do Android
+          usam para chegar até ela.
+        -->
+        <activity
+            android:name=".settings.SettingsActivity"
+            android:exported="true"
+            android:label="@string/settings"
+            android:theme="@style/Theme.Cascata">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

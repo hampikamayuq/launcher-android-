@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Versão escura da janela da tela de configurações: sem isto, com o sistema
+      no modo noturno, há um lampejo claro antes de o Compose desenhar.
+    -->
+    <style name="Theme.Cascata" parent="android:Theme.Material.NoActionBar" />
+</resources>

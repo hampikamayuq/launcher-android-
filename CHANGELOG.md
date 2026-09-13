@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 — Fase 2: aparência e identidade
+
+- Tela de configurações (engrenagem ao lado do relógio, ou "configurações do
+  app" no sistema): tudo grava na hora e a home repinta atrás.
+- Modo escuro (sistema / claro / escuro).
+- Cores: Material You, paleta derivada do papel de parede, ou cor de destaque
+  (12 amostras + hex personalizado) — paleta calculada com contraste WCAG ≥ 4,5
+  garantido.
+- Opacidade do fundo sobre o papel de parede.
+- Densidade da lista (compacta / padrão / confortável) e tamanho do texto.
+- Fontes: do sistema, três embutidas sob SIL OFL (Outfit, Sora, Atkinson
+  Hyperlegible) ou um arquivo TTF/OTF seu, importado via seletor de arquivos.
+- Pacotes de ícones no formato aberto (`appfilter.xml`; ADW / Nova / Go).
+- Trocar papel de parede pelo seletor do sistema.
+- Exportar e importar tema (`.cascata-theme`, JSON) e restaurar padrões.
+- Fonte importada acompanha o backup e a transferência entre aparelhos.
+- 58 testes de unidade (35 novos: codec do tema, paleta, parser de
+  `appfilter`, cabeçalho de fonte, limites das configurações).
+
 ## 0.2.0 — Fase 1: virar launcher de verdade
 
 - Pedido para virar o launcher padrão via `RoleManager`, com folha de boas-vindas.

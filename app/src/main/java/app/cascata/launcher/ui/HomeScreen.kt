@@ -50,9 +50,12 @@ import app.cascata.launcher.R
 import app.cascata.launcher.Row as UiRow
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
+import app.cascata.launcher.ui.theme.LocalLauncherDensity
+import app.cascata.launcher.ui.theme.iconSize
+import app.cascata.launcher.ui.theme.rowPadding
 import kotlinx.coroutines.launch
 
-private val ICON_SIZE = 40.dp
 private val INDEX_WIDTH = 28.dp
 private val LOCK_SIZE = 14.dp
 
@@ -94,8 +97,9 @@ fun HomeScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Fundo translúcido: o papel de parede continua visível por baixo.
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
+            // Fundo translúcido: o papel de parede continua visível por baixo, e
+            // quanto dele aparece é a opacidade escolhida nas configurações.
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = LocalBackgroundOpacity.current))
             .safeDrawingPadding()
             .padding(horizontal = 20.dp)
     ) {
@@ -249,6 +253,7 @@ private fun AppRow(
     repository: AppRepository,
     onLongPress: () -> Unit,
 ) {
+    val density = LocalLauncherDensity.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -257,9 +262,9 @@ private fun AppRow(
                 onClick = { repository.launch(entry) },
                 onLongClick = onLongPress,
             )
-            .padding(vertical = 6.dp),
+            .padding(vertical = density.rowPadding),
     ) {
-        AppIcon(entry = entry, repository = repository, size = ICON_SIZE)
+        AppIcon(entry = entry, repository = repository, size = density.iconSize)
         Spacer(Modifier.width(14.dp))
         Text(
             text = entry.label,

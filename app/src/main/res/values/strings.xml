@@ -27,4 +27,62 @@
     <string name="alphabet_index">Índice alfabético</string>
     <string name="action_save">Salvar</string>
     <string name="action_cancel">Cancelar</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_close">Fechar</string>
+    <string name="action_restore">Restaurar</string>
+
+    <string name="settings">Configurações</string>
+    <string name="settings_open">Abrir configurações</string>
+    <string name="percent">%1$d%%</string>
+
+    <string name="section_appearance">Aparência</string>
+    <string name="dark_mode">Modo escuro</string>
+    <string name="dark_mode_system">Sistema</string>
+    <string name="dark_mode_light">Claro</string>
+    <string name="dark_mode_dark">Escuro</string>
+    <string name="colors">Cores</string>
+    <string name="color_source_system">Sistema</string>
+    <string name="color_source_wallpaper">Papel de parede</string>
+    <string name="color_source_accent">Cor de destaque</string>
+    <string name="color_swatch">Cor %1$d</string>
+    <string name="color_swatch_selected">Cor %1$d, selecionada</string>
+    <string name="color_custom">Cor personalizada</string>
+    <string name="color_custom_selected">Cor personalizada, selecionada</string>
+    <string name="color_custom_title">Cor personalizada</string>
+    <string name="color_custom_hint">Seis dígitos hexadecimais, como #2E5AAC</string>
+    <string name="color_custom_invalid">Use seis dígitos hexadecimais, como #2E5AAC</string>
+    <string name="background_opacity">Opacidade do fundo</string>
+    <string name="density">Densidade</string>
+    <string name="density_compact">Compacta</string>
+    <string name="density_default">Padrão</string>
+    <string name="density_comfortable">Confortável</string>
+    <string name="font_scale">Tamanho do texto</string>
+
+    <string name="section_font">Fonte</string>
+    <string name="font_system">Do sistema</string>
+    <string name="font_custom">Personalizada…</string>
+    <string name="font_custom_replace">Trocar arquivo…</string>
+    <string name="font_custom_remove">Remover fonte personalizada</string>
+    <string name="font_import_failed">Não foi possível importar a fonte</string>
+
+    <string name="section_icons">Ícones</string>
+    <string name="icon_pack">Pacote de ícones</string>
+    <string name="icon_pack_system">Ícones do sistema</string>
+    <string name="icon_pack_empty">Nenhum pacote de ícones instalado. Pacotes no formato aberto, os que trazem um appfilter.xml, aparecem aqui assim que você instalar um pela loja de apps do aparelho.</string>
+
+    <string name="section_wallpaper">Papel de parede</string>
+    <string name="wallpaper_change">Trocar papel de parede</string>
+
+    <string name="section_theme">Tema</string>
+    <string name="theme_export">Exportar tema…</string>
+    <string name="theme_export_failed">Não foi possível exportar o tema</string>
+    <string name="theme_import">Importar tema…</string>
+    <string name="theme_import_failed">Não foi possível importar o tema</string>
+    <string name="theme_reset">Restaurar padrões</string>
+    <string name="theme_reset_body">Voltar toda a aparência ao padrão? Favoritos, apelidos e apps escondidos continuam como estão.</string>
+
+    <string name="section_about">Sobre</string>
+    <string name="about_version">Versão %1$s</string>
+    <string name="about_licenses">Fontes e bibliotecas de terceiros</string>
+    <string name="about_licenses_body">Outfit, Sora e Atkinson Hyperlegible — SIL Open Font License 1.1.\n\nJetpack Compose, AndroidX e a biblioteca padrão do Kotlin — Apache License 2.0.</string>
 </resources>

@@ -12,10 +12,15 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.2.0 — Fase 1 concluída)
+## Estado atual (v0.3.0 — Fases 1 e 2 concluídas)
 
 | | |
 |---|---|
+| Configurações: modo escuro, cores (Material You / papel de parede / destaque), opacidade | ✅ |
+| Densidade da lista e tamanho do texto | ✅ |
+| Fontes embutidas (OFL) ou arquivo próprio | ✅ |
+| Pacotes de ícones no formato aberto (`appfilter.xml`) | ✅ |
+| Temas exportáveis (`.cascata-theme`) | ✅ |
 | Lista alfabética com cabeçalhos de seção | ✅ |
 | Índice lateral A–Z com arraste e retorno háptico | ✅ |
 | Busca sem acento, por prefixo de palavra; swipe-up abre com teclado | ✅ |
@@ -30,7 +35,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| Temas, at-a-glance, notificações, widgets | próximas fases ([plano](docs/plano.md)) |
+| At-a-glance, notificações, widgets | próximas fases ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -54,7 +59,8 @@ base: é o custo de um launcher funcional antes de qualquer gordura.
   tempo de execução.
 - **Nada de rede, analytics ou conta.** Zero dependências de Firebase, Play
   Services ou SDK de atribuição. O app não abre socket.
-- **O que é persistido:** só o conjunto de favoritos, num DataStore. Sem
+- **O que é persistido:** favoritos, apps ocultos, apelidos e as preferências de
+  aparência, em dois DataStores; mais a fonte importada, se houver. Sem
   histórico de uso, sem metadados de notificação, sem banco.
 - **Regras de backup separadas por canal:** `cloud-backup` e `device-transfer`
   são declarados um a um, em vez de repetir o mesmo bloco nos dois.
