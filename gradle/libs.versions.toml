@@ -7,6 +7,7 @@ activityCompose = "1.12.2"
 composeBom = "2026.06.00"
 datastore = "1.1.7"
 serialization = "1.9.0"
+evalex = "3.7.0"
 junit = "4.13.2"
 
 [libraries]
@@ -24,6 +25,7 @@ androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+evalex = { group = "com.ezylang", name = "EvalEx", version.ref = "evalex" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]

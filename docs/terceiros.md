@@ -10,6 +10,7 @@ oficial (Maven ou repositório do projeto), com a licença conferida na origem.
 | AndroidX (core, activity, lifecycle, datastore, compose, material3) | Apache-2.0 | base do app |
 | Kotlin stdlib, kotlinx.coroutines | Apache-2.0 | linguagem e concorrência |
 | kotlinx.serialization (json) | Apache-2.0 | arquivos `.cascata-theme` |
+| EvalEx 3.7.0 | Apache-2.0 | calculadora na busca (o mesmo motor que o Niagara credita, entrando pelo Maven) |
 | JUnit 4 | EPL-1.0 | só testes |
 
 ## Fontes (`app/src/main/res/font/`)
