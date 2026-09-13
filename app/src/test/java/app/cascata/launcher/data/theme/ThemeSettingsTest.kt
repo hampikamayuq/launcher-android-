@@ -51,6 +51,15 @@ class ThemeSettingsTest {
     }
 
     @Test
+    fun `o relogio comeca no estilo basico`() {
+        assertEquals(ClockStyle.BASIC, ThemeSettings.DEFAULT.clockStyle)
+        assertEquals(
+            ClockStyle.TWO_LINE,
+            ThemeSettings(clockStyle = ClockStyle.TWO_LINE).coerced().clockStyle,
+        )
+    }
+
+    @Test
     fun `o objeto padrao e sempre o mesmo`() {
         assertSame(ThemeSettings.DEFAULT, ThemeSettings.DEFAULT)
         assertEquals(ThemeSettings(), ThemeSettings.DEFAULT)

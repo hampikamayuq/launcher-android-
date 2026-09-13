@@ -61,28 +61,45 @@ jobs:
           CASCATA_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           CASCATA_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           CASCATA_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew --no-daemon test lint assembleRelease
+        run: ./gradlew --no-daemon testLiteReleaseUnitTest testFullReleaseUnitTest lintLiteRelease lintFullRelease assembleRelease
 
-      - name: Verificar assinatura do APK
+      # Duas edições, dois APKs: a assinatura de cada um é conferida antes de
+      # qualquer coisa ser publicada.
+      - name: Verificar a assinatura de cada APK
         run: |
-          APK="$(find app/build/outputs/apk/release -name '*.apk' | head -n1)"
-          echo "APK: $APK"
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
+          shopt -s nullglob
+          APKS=(app/build/outputs/apk/*/release/*.apk)
+          if [ "${#APKS[@]}" -ne 2 ]; then
+            echo "::error::Esperava 2 APKs de release (lite e full), achei ${#APKS[@]}."
+            exit 1
+          fi
+          for APK in "${APKS[@]}"; do
+            echo "::group::$APK"
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
+            echo "::endgroup::"
+          done
 
-      - name: Renomear APK e gerar checksum
+      - name: Renomear APKs e gerar checksums
         run: |
+          shopt -s nullglob
           VERSION="${GITHUB_REF_NAME#v}"
-          SRC_APK="$(find app/build/outputs/apk/release -name '*.apk' | head -n1)"
-          DEST_APK="Cascata-v${VERSION}.apk"
-          cp "$SRC_APK" "$DEST_APK"
-          sha256sum "$DEST_APK" > "$DEST_APK.sha256"
-          echo "APK_PATH=$DEST_APK" >> "$GITHUB_ENV"
-          echo "SHA_PATH=$DEST_APK.sha256" >> "$GITHUB_ENV"
+          FILES=()
+          for APK in app/build/outputs/apk/*/release/*.apk; do
+            # .../apk/<flavor>/release/app-<flavor>-release.apk
+            FLAVOR="$(basename "$(dirname "$(dirname "$APK")")")"
+            DEST="Cascata-v${VERSION}-${FLAVOR}.apk"
+            cp "$APK" "$DEST"
+            sha256sum "$DEST" > "$DEST.sha256"
+            FILES+=("$DEST" "$DEST.sha256")
+          done
+          {
+            echo "RELEASE_FILES<<EOF"
+            printf '%s\n' "${FILES[@]}"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
       - name: Criar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ${{ env.APK_PATH }}
-            ${{ env.SHA_PATH }}
+          files: ${{ env.RELEASE_FILES }}
           generate_release_notes: true

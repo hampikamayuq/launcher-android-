@@ -11,6 +11,9 @@ enum class ColorSource { SYSTEM, WALLPAPER, ACCENT }
 /** Três presets de espaçamento da lista. */
 enum class Density { COMPACT, DEFAULT, COMFORTABLE }
 
+/** Os quatro desenhos do relógio do topo. [BASIC] é o que existia antes da Fase 3. */
+enum class ClockStyle { BASIC, BIG, TWO_LINE, ANALOG }
+
 /** Limites da escala de fonte: abaixo disso não se lê, acima disso a lista vira duas linhas. */
 const val MIN_FONT_SCALE = 0.85f
 const val MAX_FONT_SCALE = 1.30f
@@ -32,6 +35,12 @@ data class ThemeSettings(
     val fontId: String = "system",
     /** packageName do pacote de ícones, ou null para os ícones do sistema. */
     val iconPack: String? = null,
+    /**
+     * Campo novo da Fase 3, no fim e com default: o [ThemeFile] continua na
+     * versão 1 e um `.cascata-theme` escrito pela v0.3 segue válido — sem o
+     * campo, o relógio volta a ser o [ClockStyle.BASIC].
+     */
+    val clockStyle: ClockStyle = ClockStyle.BASIC,
 ) {
     companion object {
         val DEFAULT = ThemeSettings()

@@ -3,6 +3,13 @@ package app.cascata.launcher
 import android.app.Application
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
+import app.cascata.launcher.data.glance.AlarmSource
+import app.cascata.launcher.data.glance.BatterySource
+import app.cascata.launcher.data.glance.CalendarSource
+import app.cascata.launcher.data.glance.GlancePrefs
+import app.cascata.launcher.data.glance.weather.WeatherCache
+import app.cascata.launcher.data.glance.weather.WeatherSource
+import app.cascata.launcher.data.glance.weather.WeatherSourceFactory
 import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
@@ -26,4 +33,15 @@ class CascataApp : Application() {
     val appRepository: AppRepository by lazy {
         AppRepository(this, appScope, iconPacks, themePrefs)
     }
+
+    // Fase 3. Cada fonte só faz trabalho quando alguém assina o Flow dela, então
+    // criar o objeto de um card desligado não custa nada.
+    val glancePrefs: GlancePrefs by lazy { GlancePrefs(this) }
+    val alarmSource: AlarmSource by lazy { AlarmSource(this) }
+    val batterySource: BatterySource by lazy { BatterySource(this) }
+    val calendarSource: CalendarSource by lazy { CalendarSource(this) }
+    val weatherCache: WeatherCache by lazy { WeatherCache(this) }
+
+    /** Implementação do flavor: real na edição `full`, inerte na `lite`. */
+    val weatherSource: WeatherSource by lazy { WeatherSourceFactory.create(this, weatherCache) }
 }

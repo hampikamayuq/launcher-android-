@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      As duas permissões existem por uma única razão: o card de clima (Open-Meteo,
+      sem chave). A edição `lite` compila sem elas e o card nem aparece lá.
+      Nenhuma é pedida na instalação da função desligada — a UI pede a
+      localização na hora em que o card é ligado.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+</manifest>

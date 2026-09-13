@@ -15,6 +15,7 @@ class ThemeFileTest {
         fontScale = 1.2f,
         fontId = "outfit",
         iconPack = "com.exemplo.icones",
+        clockStyle = ClockStyle.ANALOG,
     )
 
     @Test
@@ -71,6 +72,31 @@ class ThemeFileTest {
     fun `tema ausente vira o padrao`() {
         val text = """{"format":"cascata-theme","version":1}"""
         assertEquals(ThemeSettings.DEFAULT, ThemeFile.decode(text).getOrThrow())
+    }
+
+    /**
+     * Compatibilidade: um `.cascata-theme` escrito pela v0.3 não tem `clockStyle`.
+     * Ele continua na versão 1 e o relógio volta ao estilo básico.
+     */
+    @Test
+    fun `arquivo da versao anterior sem clockStyle continua valido`() {
+        val text = """
+            {"format":"cascata-theme","version":1,
+             "theme":{"darkMode":"DARK","colorSource":"ACCENT","accentArgb":-3407804,
+                      "backgroundOpacity":0.3,"density":"COMPACT","fontScale":1.1,
+                      "fontId":"sora","iconPack":null}}
+        """.trimIndent()
+        val decoded = ThemeFile.decode(text).getOrThrow()
+        assertEquals(ClockStyle.BASIC, decoded.clockStyle)
+        assertEquals(DarkMode.DARK, decoded.darkMode)
+        assertEquals("sora", decoded.fontId)
+    }
+
+    @Test
+    fun `o estilo do relogio sobrevive ao arquivo`() {
+        val text = ThemeFile.encode(sample)
+        assertTrue(text, text.contains("\"clockStyle\": \"ANALOG\""))
+        assertEquals(ClockStyle.ANALOG, ThemeFile.decode(text).getOrThrow().clockStyle)
     }
 
     @Test

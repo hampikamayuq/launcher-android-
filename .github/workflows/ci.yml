@@ -38,21 +38,25 @@ jobs:
         with:
           cache-read-only: false
 
+      # Com flavors, cada tarefa tem uma variante: as duas edições precisam
+      # compilar, passar nos testes e no lint antes de qualquer merge.
       - name: Run tests, lint and assembleDebug
-        run: ./gradlew --no-daemon test lint assembleDebug
+        run: ./gradlew --no-daemon testLiteDebugUnitTest testFullDebugUnitTest lintLiteDebug lintFullDebug assembleDebug
 
-      - name: Upload debug APK
+      - name: Upload debug APKs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: debug-apks
+          path: app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: warn
 
-      - name: Upload lint report
+      - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lint-report
-          path: app/build/reports/lint-results-debug.html
+          name: lint-reports
+          path: |
+            app/build/reports/lint-results-liteDebug.html
+            app/build/reports/lint-results-fullDebug.html
           if-no-files-found: warn

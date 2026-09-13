@@ -35,6 +35,9 @@
         android:name="android.permission.ACCESS_HIDDEN_PROFILES"
         android:minSdkVersion="35" />
 
+    <!-- Declarada; só é pedida quando o card de agenda é ligado. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
     <application
         android:name=".CascataApp"
         android:allowBackup="true"

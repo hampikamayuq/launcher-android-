@@ -21,6 +21,7 @@ private val DENSITY = stringPreferencesKey("density")
 private val FONT_SCALE = floatPreferencesKey("font_scale")
 private val FONT_ID = stringPreferencesKey("font_id")
 private val ICON_PACK = stringPreferencesKey("icon_pack")
+private val CLOCK_STYLE = stringPreferencesKey("clock_style")
 
 /**
  * Arquivo separado do "cascata" de propósito: assim `reset()` devolve a aparência
@@ -61,6 +62,7 @@ private fun Preferences.toSettings(): ThemeSettings = ThemeSettings(
     fontScale = this[FONT_SCALE] ?: ThemeSettings.DEFAULT.fontScale,
     fontId = this[FONT_ID] ?: ThemeSettings.DEFAULT.fontId,
     iconPack = this[ICON_PACK],
+    clockStyle = enumOr(this[CLOCK_STYLE], ClockStyle.BASIC),
 ).coerced()
 
 private fun MutablePreferences.write(settings: ThemeSettings) {
@@ -71,6 +73,7 @@ private fun MutablePreferences.write(settings: ThemeSettings) {
     this[DENSITY] = settings.density.name
     this[FONT_SCALE] = settings.fontScale
     this[FONT_ID] = settings.fontId
+    this[CLOCK_STYLE] = settings.clockStyle.name
     val pack = settings.iconPack
     if (pack == null) remove(ICON_PACK) else this[ICON_PACK] = pack
 }

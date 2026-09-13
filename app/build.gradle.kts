@@ -17,6 +17,26 @@ android {
         versionName = "0.3.0"
     }
 
+    /**
+     * Duas edições do mesmo app, não dois apps: `lite` compila sem INTERNET nem
+     * localização (o card de clima some), `full` traz as duas permissões. Mesmo
+     * applicationId de propósito — instala-se uma OU outra, e trocar de edição é
+     * uma atualização, não um segundo ícone na gaveta.
+     */
+    flavorDimensions += "network"
+
+    productFlavors {
+        create("lite") {
+            dimension = "network"
+            isDefault = true
+            buildConfigField("boolean", "HAS_NETWORK", "false")
+        }
+        create("full") {
+            dimension = "network"
+            buildConfigField("boolean", "HAS_NETWORK", "true")
+        }
+    }
+
     val keystorePath = System.getenv("CASCATA_KEYSTORE_PATH")
     val hasReleaseSigning = keystorePath != null && file(keystorePath).exists()
 
@@ -64,6 +84,8 @@ android {
 
     buildFeatures {
         compose = true
+        // HAS_NETWORK e VERSION_NAME (User-Agent do clima) vêm daqui.
+        buildConfig = true
     }
 
     packaging {
