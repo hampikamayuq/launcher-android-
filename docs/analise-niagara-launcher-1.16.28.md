@@ -4,21 +4,46 @@ Análise estática do pacote `Niagara_Launcher_v1_16_28_arquivos.zip` (conteúdo
 extraído). Ferramentas: androguard 4.1.4 (AXML/ARSC/DEX), inspeção de strings do DEX e dos
 recursos. Nenhum código foi executado.
 
-## 1. Ressalvas sobre o material analisado
+## 1. Procedência do material e ressalvas
 
-Três limitações importantes, porque afetam o que se pode afirmar:
+O pacote analisado foi confrontado com o **APK oficial** do release
+[v1.16.28](https://github.com/NiagaraLauncher/Niagara-Issues/releases/tag/v1.16.28)
+(`Niagara_Launcher_v1.16.28-release.apk`, 14.022.793 bytes,
+SHA-256 `10d3e1223510c68d4fc2192a89390e7b8144d0856756e64055340cf91352b413`).
 
-1. **O pacote não está assinado.** Em `META-INF/` não há `MANIFEST.MF`, `*.SF` nem `*.RSA/EC`.
-   Não é possível verificar autoria nem integridade — não dá para afirmar que este é o APK
-   oficial publicado na Play Store, apenas que o conteúdo é coerente com ele.
-2. **Os nomes de arquivo sofreram colisão de maiúsculas/minúsculas.** A extração foi feita em
-   sistema de arquivos case-insensitive (Windows/macOS): 198 arquivos em `res/` aparecem com
-   sufixo `1` (ex.: `dS.xml` → `dS1.xml`), e alguns pares como `res/fb.xml` / `res/fB.xml`
-   colidiram. Um recurso — o `dataExtractionRules` — não pôde ser recuperado por causa disso.
-3. **O código está ofuscado (R8).** 11.455 das 12.713 classes foram reempacotadas em `b.*`
-   com nomes gerados; os metadados Kotlin foram removidos. A leitura de funcionalidade abaixo
-   se apoia nas classes que o R8 preservou (as referenciadas pelo manifesto, por reflexão ou
-   por serialização) e nas strings — não em decompilação completa.
+**Autenticidade — verificada.** O APK oficial está assinado pelo APK Signature Scheme v2
+(sem v1, coerente com `minSdk 26`), com certificado autoassinado
+`CN=Peter Huber, L=Koenigsbrunn, ST=Bayern, C=DE`, série 466670007, válido de 2017-03-13 a
+2042-03-07 (SHA-256 do certificado: `ccb918002c40334b416899258de4f730a36c5d38821b3cb6fcb8c15a4b8198ed`).
+**Todos os arquivos em que esta análise se apoia são bit a bit idênticos aos do release
+assinado**: `AndroidManifest.xml`, `classes.dex`, `classes2.dex`, `resources.arsc`,
+`assets/dexopt/baseline.prof`, as bibliotecas nativas e os metadados de build. As conclusões
+abaixo valem, portanto, para o APK oficial.
+
+**O ZIP enviado, porém, está corrompido como cópia do APK.** A extração foi feita em sistema de
+arquivos case-insensitive (Windows/macOS) e os nomes ofuscados de recursos diferem só por
+maiúsculas/minúsculas. Resultado da comparação entrada a entrada:
+
+| | Oficial | ZIP enviado |
+|---|---|---|
+| Arquivos | 1.834 | 1.497 |
+| Idênticos ao oficial | — | 1.211 |
+| **Com conteúdo trocado** (colisão sobrescreveu) | — | **285** |
+| **Ausentes** | — | **337** |
+| Extras que não existem no APK | — | 1 |
+
+Ou seja, ~1 em cada 5 recursos do ZIP tem o conteúdo de *outro* recurso (`res/-A.xml` carrega o
+conteúdo de `res/-a.xml`, e assim por diante), e 337 arquivos simplesmente não estão lá — entre
+eles o `dataExtractionRules`. O arquivo extra é
+`META-INF/third_party_licenses/com.google.mlkit/genai-schema/third_party_licenses.docx`: um
+documento Word com o texto do `third_party_licenses.txt` do ML Kit, gerado por alguma ferramenta
+de conversão fora do APK (timestamp distinto dos demais). **Não use esse ZIP como fonte de
+recursos** — só os arquivos grandes (DEX, ARSC, manifesto) sobreviveram intactos.
+
+**Ressalva remanescente: o código está ofuscado (R8).** 11.455 das 12.713 classes foram
+reempacotadas em `b.*` com nomes gerados e os metadados Kotlin foram removidos. A leitura de
+funcionalidade abaixo se apoia nas classes que o R8 preservou (referenciadas pelo manifesto, por
+reflexão ou por serialização) e nas strings — não em decompilação completa.
 
 ## 2. Identidade e build
 
@@ -29,7 +54,8 @@ Três limitações importantes, porque afetam o que se pode afirmar:
 | minSdk / targetSdk / compileSdk | 26 / 36 / 37 (codename 17) |
 | Android Gradle Plugin | 9.3.2 (Gradle 9.6.1) |
 | Kotlin | 2.2.20 (JVM target 11) |
-| Commit de origem | `98b1cf65a1e73c573943b335792cf92f252e28c7` (`META-INF/version-control-info.textproto`) |
+| Commit de origem | `98b1cf65a1e73c573943b335792cf92f252e28c7` (`META-INF/version-control-info.textproto`) — repositório privado do app; o `da4e016` citado no release é do repositório público de issues |
+| Publicação | 09/09, release assinado por `Maxr1998-bot` no repo `NiagaraLauncher/Niagara-Issues` |
 | Classes / métodos / campos (DEX) | 12.713 / 63.093 / 44.917 |
 | DEX | `classes.dex` (10,7 MB) + `classes2.dex` (1 KB, só `j$.time.DesugarDuration`) |
 | Recursos | 1.446 arquivos em `res/`, `resources.arsc` de 5,2 MB, 46.346 strings |
@@ -259,10 +285,28 @@ Do lado positivo: serviço de acessibilidade minimamente escopado, notificaçõe
 de conteúdo, telemetria desligada por padrão, R8 com repackaging, sem bibliotecas nativas de
 terceiros, sem SDK de anúncios, sem WebView exposta no manifesto.
 
-## 9. O que ficaria de fora desta análise
+## 9. Conferência com as notas do release oficial
 
-Para ir além do que está aqui seria necessário: decompilar `classes.dex` (jadx/dex2jar) e
+As notas de v1.16.28 anunciam duas mudanças; ambas se confirmam no binário:
+
+- **"Flashlight Tip on Homescreen"** — presente. A implementação usa
+  `CameraManager.registerTorchCallback` / `setTorchMode` (API de lanterna que **não exige a
+  permissão `CAMERA`** — coerente com a lista de permissões do §3.1, onde `CAMERA` não aparece).
+  Recursos associados: `flashlight_on_tip`, `flashlight_on_tip_button`, estado `FLASHLIGHT_ON`,
+  já traduzidos ("Flashlight is on", "Die Taschenlampe ist an", "A lanterna está…").
+- **"Translation Updates" (Crowdin)** — coerente com os 116 locales empacotados (§2).
+
+Sendo um "minor update" de duas linhas, nada do que está descrito nas seções 3 a 8 é novidade
+desta versão: é a superfície acumulada do app.
+
+Sobre tamanho: o APK oficial tem 13,4 MB (14.022.793 bytes) para 21,7 MB de conteúdo
+descomprimido — a diferença em relação a um ZIP recomprimido vem do `resources.arsc` armazenado
+**sem compressão** (exigência do zipalign moderno, 5,2 MB) mais o bloco de assinatura.
+
+## 10. O que ficaria de fora desta análise
+
+Para ir além do que está aqui seria necessário decompilar `classes.dex` (jadx/dex2jar) e
 reconstruir o pacote `b.*` para (a) confirmar o uso real de root, (b) mapear os endpoints do
 backend e o formato dos tokens, (c) auditar a validação de chamador nos providers exportados e
-(d) listar os "secret commands". Também seria útil obter o APK **assinado** da Play Store para
-verificar integridade e comparar com este pacote.
+(d) listar os "secret commands". A verificação de integridade/autoria, que era a outra lacuna,
+está feita (§1).
