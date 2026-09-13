@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Cascata</string>
     <string name="search_hint">Buscar apps</string>
     <string name="search_open">Abrir busca</string>
@@ -57,6 +57,55 @@
     <string name="density_default">Padrão</string>
     <string name="density_comfortable">Confortável</string>
     <string name="font_scale">Tamanho do texto</string>
+
+    <string name="section_glance">At a glance</string>
+    <string name="clock_style">Relógio</string>
+    <string name="clock_style_basic">Simples</string>
+    <string name="clock_style_big">Grande</string>
+    <string name="clock_style_two_line">Duas linhas</string>
+    <string name="clock_style_analog">Analógico</string>
+    <string name="glance_alarm">Próximo alarme</string>
+    <string name="glance_battery">Bateria</string>
+    <string name="glance_calendar">Próximo evento</string>
+    <string name="glance_weather">Clima</string>
+    <string name="glance_weather_unavailable">Disponível na edição completa</string>
+    <string name="glance_calendar_denied">Permissão de agenda negada. Ative nas configurações do sistema.</string>
+    <string name="glance_location_denied">Permissão de localização negada. Ative nas configurações do sistema.</string>
+    <string name="glance_open_app_settings">Abrir configurações do app</string>
+    <string name="glance_footer">Cada card pede só a permissão que usa, na hora em que você o liga.</string>
+    <string name="temperature_unit">Unidade</string>
+    <string name="temperature_celsius">°C</string>
+    <string name="temperature_fahrenheit">°F</string>
+
+    <string name="glance_alarm_tomorrow">amanhã %1$s</string>
+    <string name="glance_alarm_day">%1$s %2$s</string>
+    <string name="glance_alarm_description">Próximo alarme %1$s</string>
+    <!--
+      Só leitores de tela leem estas duas: "por cento" é falado, e em português
+      não muda com a quantidade ("um por cento", "dois por cento") — daí não
+      serem plurals, apesar do palpite do lint.
+    -->
+    <string name="glance_battery_description" tools:ignore="PluralsCandidate">Bateria %1$d por cento</string>
+    <string name="glance_battery_description_charging" tools:ignore="PluralsCandidate">Bateria %1$d por cento, carregando</string>
+    <string name="glance_calendar_all_day">Dia inteiro</string>
+    <string name="glance_calendar_more">+%1$d</string>
+    <string name="glance_calendar_description">Próximo evento: %1$s, %2$s</string>
+    <string name="glance_calendar_description_more">Próximo evento: %1$s, %2$s, e mais %3$d</string>
+    <string name="glance_weather_temperature">%1$d°</string>
+    <string name="glance_weather_empty">Toque para atualizar</string>
+    <string name="glance_weather_empty_description">Clima sem dados. Toque para atualizar.</string>
+    <string name="glance_weather_description">Clima %1$s, %2$s</string>
+    <string name="glance_weather_updating">Atualizando o clima</string>
+    <string name="glance_weather_failed">Não foi possível atualizar</string>
+    <string name="weather_clear">céu limpo</string>
+    <string name="weather_partly_cloudy">parcialmente nublado</string>
+    <string name="weather_cloudy">nublado</string>
+    <string name="weather_fog">neblina</string>
+    <string name="weather_drizzle">garoa</string>
+    <string name="weather_rain">chuva</string>
+    <string name="weather_snow">neve</string>
+    <string name="weather_thunderstorm">tempestade</string>
+    <string name="weather_unknown">condição desconhecida</string>
 
     <string name="section_font">Fonte</string>
     <string name="font_system">Do sistema</string>

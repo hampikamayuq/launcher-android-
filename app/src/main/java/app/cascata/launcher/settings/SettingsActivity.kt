@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cascata.launcher.CascataApp
 import app.cascata.launcher.R
+import app.cascata.launcher.data.glance.CalendarSource
+import app.cascata.launcher.data.glance.GlancePrefs
+import app.cascata.launcher.data.glance.GlanceSettings
+import app.cascata.launcher.data.glance.weather.WeatherCache
+import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
@@ -58,6 +63,8 @@ class SettingsActivity : ComponentActivity() {
         setContent {
             val settings by app.themePrefs.settings
                 .collectAsStateWithLifecycle(initialValue = ThemeSettings.DEFAULT)
+            val glance by app.glancePrefs.settings
+                .collectAsStateWithLifecycle(initialValue = GlanceSettings.DEFAULT)
 
             // Arquivo, não preferência: quem importa ou remove avisa por aqui.
             var customFont by remember { mutableStateOf(app.fontStore.customFile()) }
@@ -77,8 +84,13 @@ class SettingsActivity : ComponentActivity() {
             ) {
                 SettingsScreen(
                     settings = settings,
+                    glance = glance,
                     customFont = customFont,
                     themePrefs = app.themePrefs,
+                    glancePrefs = app.glancePrefs,
+                    calendarSource = app.calendarSource,
+                    weatherSource = app.weatherSource,
+                    weatherCache = app.weatherCache,
                     fontStore = app.fontStore,
                     iconPacks = app.iconPacks,
                     onCustomFontChanged = { customFont = app.fontStore.customFile() },
@@ -96,8 +108,13 @@ typealias UpdateSettings = ((ThemeSettings) -> ThemeSettings) -> Unit
 @Composable
 private fun SettingsScreen(
     settings: ThemeSettings,
+    glance: GlanceSettings,
     customFont: File?,
     themePrefs: ThemePrefs,
+    glancePrefs: GlancePrefs,
+    calendarSource: CalendarSource,
+    weatherSource: WeatherSource,
+    weatherCache: WeatherCache,
     fontStore: FontStore,
     iconPacks: IconPackRepository,
     onCustomFontChanged: () -> Unit,
@@ -133,6 +150,15 @@ private fun SettingsScreen(
                 .padding(bottom = 32.dp),
         ) {
             AppearanceSection(settings = settings, update = update)
+            GlanceSection(
+                settings = settings,
+                glance = glance,
+                glancePrefs = glancePrefs,
+                calendarSource = calendarSource,
+                weatherSource = weatherSource,
+                weatherCache = weatherCache,
+                update = update,
+            )
             FontSection(
                 settings = settings,
                 customFont = customFont,

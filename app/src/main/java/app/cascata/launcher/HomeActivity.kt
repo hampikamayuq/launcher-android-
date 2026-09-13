@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.cascata.launcher.data.glance.GlanceSettings
 import app.cascata.launcher.data.theme.ThemeSettings
 import app.cascata.launcher.ui.HomeScreen
 import app.cascata.launcher.ui.theme.CascataTheme
@@ -42,6 +43,9 @@ class HomeActivity : ComponentActivity() {
         setContent {
             val settings by app.themePrefs.settings
                 .collectAsStateWithLifecycle(initialValue = ThemeSettings.DEFAULT)
+            // Quais cards do topo estão ligados. Nada é consultado pelos que não estão.
+            val glance by app.glancePrefs.settings
+                .collectAsStateWithLifecycle(initialValue = GlanceSettings.DEFAULT)
 
             // Cor do papel de parede: lida uma vez (o `onStart`) e relida a cada
             // troca de fundo. O WallpaperManager é binder — não na main thread.
@@ -58,7 +62,16 @@ class HomeActivity : ComponentActivity() {
                 customFont = customFont,
                 wallpaperSeed = wallpaperSeed,
             ) {
-                HomeScreen(viewModel = viewModel, repository = app.appRepository)
+                HomeScreen(
+                    viewModel = viewModel,
+                    repository = app.appRepository,
+                    clockStyle = settings.clockStyle,
+                    glance = glance,
+                    alarmSource = app.alarmSource,
+                    batterySource = app.batterySource,
+                    calendarSource = app.calendarSource,
+                    weatherSource = app.weatherSource,
+                )
             }
         }
     }

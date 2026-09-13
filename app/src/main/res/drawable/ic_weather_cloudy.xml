@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nuvem sozinha, centrada. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7,17 C4.8,17 3.5,15.6 3.5,14 C3.5,12.4 4.8,11.1 6.4,11 C7,9 8.8,7.6 11,7.6 C13.5,7.6 15.6,9.4 16,11.8 C18,12 19.5,13.4 19.5,15.1 C19.5,16.2 18.7,17 17.5,17 Z" />
+</vector>

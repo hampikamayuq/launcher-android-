@@ -12,10 +12,13 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.3.0 — Fases 1 e 2 concluídas)
+## Estado atual (v0.4.0 — Fases 1 a 3 concluídas)
 
 | | |
 |---|---|
+| Relógio em 4 estilos (básico, dígitos grandes, duas linhas, analógico) | ✅ |
+| Cards: próximo alarme, bateria, próximo evento, clima (edição `full`) | ✅ |
+| Cada card liga sozinho e pede só a sua permissão | ✅ |
 | Configurações: modo escuro, cores (Material You / papel de parede / destaque), opacidade | ✅ |
 | Densidade da lista e tamanho do texto | ✅ |
 | Fontes embutidas (OFL) ou arquivo próprio | ✅ |
@@ -35,7 +38,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| At-a-glance, notificações, widgets | próximas fases ([plano](docs/plano.md)) |
+| Notificações, widgets | próximas fases ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -55,13 +58,20 @@ base: é o custo de um launcher funcional antes de qualquer gordura.
 
 - **Sem `QUERY_ALL_PACKAGES`.** A visibilidade de pacotes vem de um `<queries>`
   com o filtro `MAIN`/`LAUNCHER` — o suficiente para `LauncherApps`, sem a
-  permissão de maior alcance do Android. O app não pede **nenhuma** permissão em
-  tempo de execução.
-- **Nada de rede, analytics ou conta.** Zero dependências de Firebase, Play
-  Services ou SDK de atribuição. O app não abre socket.
-- **O que é persistido:** favoritos, apps ocultos, apelidos e as preferências de
-  aparência, em dois DataStores; mais a fonte importada, se houver. Sem
-  histórico de uso, sem metadados de notificação, sem banco.
+  permissão de maior alcance do Android.
+- **Permissão só quando a função liga.** O app instala sem pedir nada. Ligar o
+  card de agenda pede `READ_CALENDAR`; ligar o de clima pede localização
+  grosseira. Card desligado é permissão não pedida e fonte não consultada.
+- **Duas edições, mesmo app.** `lite` compila **sem `INTERNET`** — o card de
+  clima nem aparece. `full` traz `INTERNET` e `ACCESS_COARSE_LOCATION` por uma
+  única razão, o clima (Open-Meteo, sem chave, coordenadas arredondadas a ~1 km,
+  cache de 30 min). Mesmo `applicationId`: instala-se uma **ou** outra.
+- **Nada de analytics ou conta.** Zero dependências de Firebase, Play Services
+  ou SDK de atribuição. Fora o clima na edição `full`, o app não abre socket.
+- **O que é persistido:** favoritos, apps ocultos, apelidos, as preferências de
+  aparência e dos cards, e o último clima, em DataStores; mais a fonte
+  importada, se houver. Sem histórico de uso, sem metadados de notificação,
+  sem banco.
 - **Regras de backup separadas por canal:** `cloud-backup` e `device-transfer`
   são declarados um a um, em vez de repetir o mesmo bloco nos dois.
 - **Sem framework de injeção.** As dependências são três objetos criados sob
@@ -72,8 +82,10 @@ base: é o custo de um launcher funcional antes de qualquer gordura.
 
 ```bash
 export ANDROID_HOME=/caminho/do/sdk   # precisa de platform 36 e build-tools 36
-./gradlew :app:assembleDebug          # APK em app/build/outputs/apk/debug/
-./gradlew :app:testDebugUnitTest      # testes de normalização e seções
+./gradlew assembleLiteDebug           # app/build/outputs/apk/lite/debug/
+./gradlew assembleFullDebug           # app/build/outputs/apk/full/debug/
+./gradlew testLiteDebugUnitTest testFullDebugUnitTest
+./gradlew lintLiteDebug lintFullDebug
 ```
 
 Requisitos: JDK 17+, Android SDK com `platforms;android-36` e `build-tools;36.0.0`.

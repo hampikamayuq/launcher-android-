@@ -50,6 +50,14 @@ import app.cascata.launcher.R
 import app.cascata.launcher.Row as UiRow
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.glance.AlarmSource
+import app.cascata.launcher.data.glance.BatterySource
+import app.cascata.launcher.data.glance.CalendarSource
+import app.cascata.launcher.data.glance.GlanceSettings
+import app.cascata.launcher.data.glance.weather.WeatherSource
+import app.cascata.launcher.data.theme.ClockStyle
+import app.cascata.launcher.ui.clock.ClockHeader
+import app.cascata.launcher.ui.glance.GlanceRow
 import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
 import app.cascata.launcher.ui.theme.LocalLauncherDensity
 import app.cascata.launcher.ui.theme.iconSize
@@ -67,6 +75,12 @@ private val LOCK_SIZE = 14.dp
 fun HomeScreen(
     viewModel: HomeViewModel,
     repository: AppRepository,
+    clockStyle: ClockStyle,
+    glance: GlanceSettings,
+    alarmSource: AlarmSource,
+    batterySource: BatterySource,
+    calendarSource: CalendarSource,
+    weatherSource: WeatherSource,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -104,7 +118,19 @@ fun HomeScreen(
             .padding(horizontal = 20.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            ClockHeader(modifier = Modifier.swipeUpToSearch(openSearch))
+            ClockHeader(
+                clockStyle = clockStyle,
+                modifier = Modifier.swipeUpToSearch(openSearch),
+            )
+
+            // Entre o relógio e a busca: sem nenhum card ligado, não ocupa altura.
+            GlanceRow(
+                settings = glance,
+                alarmSource = alarmSource,
+                batterySource = batterySource,
+                calendarSource = calendarSource,
+                weatherSource = weatherSource,
+            )
 
             OutlinedTextField(
                 value = state.query,
