@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
       Visibilidade de pacotes: em vez de QUERY_ALL_PACKAGES, declaramos apenas o
@@ -37,6 +38,20 @@
 
     <!-- Declarada; só é pedida quando o card de agenda é ligado. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+
+    <!--
+      BIND_APPWIDGET é permissão de sistema: um launcher de terceiro nunca a
+      recebe na instalação. Declará-la é o que o AOSP faz — ela não é concedida
+      aqui, mas é o que permite ao sistema lembrar da autorização que o usuário
+      dá uma única vez no diálogo de ACTION_APPWIDGET_BIND. Sem o diálogo, nenhum
+      widget liga; com ele, os próximos ligam sozinhos.
+
+      O lint avisa que ela só é concedida a app de sistema — é verdade, e é o
+      ponto: declarada e não concedida é exatamente o estado que o fluxo espera.
+    -->
+    <uses-permission
+        android:name="android.permission.BIND_APPWIDGET"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:name=".CascataApp"
@@ -99,6 +114,19 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!--
+          Restauração de backup: o sistema realoca os ids de widget e avisa por
+          este broadcast, com os antigos e os novos. Exportado porque quem envia é
+          o Android — como no AOSP, não há permissão a exigir de quem manda.
+        -->
+        <receiver
+            android:name=".widgets.AppWidgetsRestoredReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_HOST_RESTORED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

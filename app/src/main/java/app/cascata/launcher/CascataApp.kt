@@ -18,6 +18,8 @@ import app.cascata.launcher.data.notifications.NotificationStore
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.WallpaperColorsSource
+import app.cascata.launcher.data.widgets.WidgetHostManager
+import app.cascata.launcher.data.widgets.WidgetPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -56,4 +58,9 @@ class CascataApp : Application() {
     val notificationPrefs: NotificationPrefs by lazy { NotificationPrefs(this) }
     val notificationAccess: NotificationAccess by lazy { NotificationAccess(this) }
     val mediaSource: MediaSource by lazy { MediaSource(this) }
+
+    // Fase 5. O host precisa existir no processo, e não na Activity: o receiver de
+    // restauração e a home falam com o mesmo id de host.
+    val widgetPrefs: WidgetPrefs by lazy { WidgetPrefs(this) }
+    val widgetHost: WidgetHostManager by lazy { WidgetHostManager(this) }
 }
