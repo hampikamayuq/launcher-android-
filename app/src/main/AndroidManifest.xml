@@ -83,6 +83,22 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!--
+          Acesso a notificações. O serviço é exportado porque quem faz bind nele é
+          o sistema, e a permissão BIND_NOTIFICATION_LISTENER_SERVICE garante que
+          só ele consegue. Nada acontece até o usuário conceder o acesso na tela do
+          Android: antes disso a classe nem chega a ser instanciada.
+        -->
+        <service
+            android:name=".notifications.CascataNotificationListener"
+            android:exported="true"
+            android:label="@string/notification_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

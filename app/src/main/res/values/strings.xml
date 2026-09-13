@@ -107,6 +107,9 @@
     <string name="weather_thunderstorm">tempestade</string>
     <string name="weather_unknown">condição desconhecida</string>
 
+    <!-- Rótulo do serviço na lista de acesso a notificações do sistema. -->
+    <string name="notification_listener_label">Notificações do Cascata</string>
+
     <string name="section_font">Fonte</string>
     <string name="font_system">Do sistema</string>
     <string name="font_custom">Personalizada…</string>

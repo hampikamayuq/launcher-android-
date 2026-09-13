@@ -1,5 +1,6 @@
 package app.cascata.launcher
 
+import android.content.Context
 import android.content.pm.ShortcutInfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -7,12 +8,22 @@ import androidx.lifecycle.viewModelScope
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
+import app.cascata.launcher.data.notifications.AppNotification
+import app.cascata.launcher.data.notifications.NotificationAction
+import app.cascata.launcher.data.notifications.NotificationPrefs
+import app.cascata.launcher.data.notifications.NotificationSettings
+import app.cascata.launcher.data.notifications.NotificationStore
+import app.cascata.launcher.data.notifications.fire
+import app.cascata.launcher.data.notifications.open
+import app.cascata.launcher.data.notifications.reply
+import app.cascata.launcher.data.notifications.visibleNotifications
 import app.cascata.launcher.data.withAlias
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.Collator
@@ -37,6 +48,15 @@ data class HomeUiState(
 class HomeViewModel(
     private val repository: AppRepository,
     private val prefs: LauncherPrefs,
+    /** Objeto de processo: quem o alimenta é o serviço, criado pelo sistema. */
+    private val notificationStore: NotificationStore = NotificationStore,
+    /**
+     * Fase 4. Nulos até a UI passá-los (a HomeActivity ainda usa o construtor de
+     * dois argumentos): sem eles o recurso fica desligado e a lista não muda.
+     */
+    private val notificationPrefs: NotificationPrefs? = null,
+    /** Contexto da aplicação: `PendingIntent.send` da resposta direta exige um. */
+    private val appContext: Context? = null,
 ) : ViewModel() {
 
     /** O que depende do sistema, não do DataStore; re-lido a cada onResume. */
@@ -83,6 +103,24 @@ class HomeViewModel(
                 hasShortcutHost = sys.hasShortcutHost,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+
+    /** O serviço está conectado? É o que separa "ligado" de "ligado e funcionando". */
+    val notificationsConnected: StateFlow<Boolean> get() = notificationStore.connected
+
+    /** O que o usuário escolheu para as notificações; o acesso real é do sistema. */
+    val notificationSettings: StateFlow<NotificationSettings> =
+        (notificationPrefs?.settings ?: flowOf(NotificationSettings.DEFAULT))
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NotificationSettings.DEFAULT)
+
+    /**
+     * Por `appKey`, pronto para a lista cruzar com `Row.App.entry.appKey`. Some
+     * inteiro com o recurso desligado, e some por app silenciado — o store
+     * continua cheio, o que muda é o que a home enxerga.
+     */
+    val notifications: StateFlow<Map<String, List<AppNotification>>> =
+        combine(notificationStore.byApp, notificationSettings) { byApp, settings ->
+            visibleNotifications(byApp, settings)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     init {
         refreshDefaultLauncher()
@@ -147,12 +185,28 @@ class HomeViewModel(
 
     suspend fun shortcutsFor(entry: AppEntry): List<ShortcutInfo> = repository.shortcuts(entry)
 
+    /** Abre o que a notificação aponta; sem contexto não há como disparar nada. */
+    fun onOpenNotification(notification: AppNotification): Boolean =
+        appContext?.let { open(notification, it) } ?: false
+
+    fun onDismissNotification(key: String) = notificationStore.dismiss(key)
+
+    fun onDismissAll(appKey: String) = notificationStore.dismissAll(appKey)
+
+    fun onFireAction(action: NotificationAction): Boolean = fire(action)
+
+    fun onReply(action: NotificationAction, text: String): Boolean =
+        appContext?.let { reply(action, text, it) } ?: false
+
     class Factory(
         private val repository: AppRepository,
         private val prefs: LauncherPrefs,
+        private val notificationStore: NotificationStore = NotificationStore,
+        private val notificationPrefs: NotificationPrefs? = null,
+        private val appContext: Context? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            HomeViewModel(repository, prefs) as T
+            HomeViewModel(repository, prefs, notificationStore, notificationPrefs, appContext) as T
     }
 }

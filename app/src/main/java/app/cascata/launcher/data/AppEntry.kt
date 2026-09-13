@@ -20,7 +20,16 @@ data class AppEntry(
 ) {
     /** Chave estável entre reinicializações e entre perfis (trabalho/pessoal). */
     val key: String get() = "${component.flattenToShortString()}#${user.hashCode()}"
+
+    /** Chave por *app*, não por atividade: é por ela que a UI casa app e notificações. */
+    val appKey: String get() = appKeyOf(component.packageName, user.hashCode())
 }
+
+/**
+ * A fórmula do [AppEntry.appKey] e do `AppNotification.appKey`, num lugar só —
+ * se as duas pontas divergirem, a notificação nunca aparece embaixo do app.
+ */
+fun appKeyOf(packageName: String, userHash: Int): String = "$packageName#$userHash"
 
 /** Cria a entrada a partir do rótulo do sistema, sem apelido. */
 fun appEntry(

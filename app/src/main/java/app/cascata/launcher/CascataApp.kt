@@ -7,10 +7,14 @@ import app.cascata.launcher.data.glance.AlarmSource
 import app.cascata.launcher.data.glance.BatterySource
 import app.cascata.launcher.data.glance.CalendarSource
 import app.cascata.launcher.data.glance.GlancePrefs
+import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherCache
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.glance.weather.WeatherSourceFactory
 import app.cascata.launcher.data.iconpack.IconPackRepository
+import app.cascata.launcher.data.notifications.NotificationAccess
+import app.cascata.launcher.data.notifications.NotificationPrefs
+import app.cascata.launcher.data.notifications.NotificationStore
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.WallpaperColorsSource
@@ -44,4 +48,12 @@ class CascataApp : Application() {
 
     /** Implementação do flavor: real na edição `full`, inerte na `lite`. */
     val weatherSource: WeatherSource by lazy { WeatherSourceFactory.create(this, weatherCache) }
+
+    // Fase 4. O store é um objeto de processo porque quem o alimenta é o
+    // NotificationListenerService, instanciado pelo sistema — não há construtor
+    // onde injetar nada. Exposto aqui para o ViewModel não ir buscar um global.
+    val notificationStore: NotificationStore get() = NotificationStore
+    val notificationPrefs: NotificationPrefs by lazy { NotificationPrefs(this) }
+    val notificationAccess: NotificationAccess by lazy { NotificationAccess(this) }
+    val mediaSource: MediaSource by lazy { MediaSource(this) }
 }
