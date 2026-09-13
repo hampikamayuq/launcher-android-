@@ -1,5 +1,6 @@
 package app.cascata.launcher.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,13 +12,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,11 +34,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.cascata.launcher.HomeUiState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.cascata.launcher.HomeViewModel
 import app.cascata.launcher.R
 import app.cascata.launcher.Row as UiRow
 import app.cascata.launcher.data.AppEntry
@@ -42,17 +54,42 @@ import kotlinx.coroutines.launch
 
 private val ICON_SIZE = 40.dp
 private val INDEX_WIDTH = 28.dp
+private val LOCK_SIZE = 14.dp
 
+/**
+ * A home inteira. Recebe o ViewModel direto: as ações já são doze, e passá-las
+ * uma a uma só trocaria o acoplamento por uma lista de lambdas.
+ */
 @Composable
 fun HomeScreen(
-    state: HomeUiState,
+    viewModel: HomeViewModel,
     repository: AppRepository,
-    onQueryChange: (String) -> Unit,
-    onToggleFavorite: (AppEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    /** O gesto só foca o campo — que continua visível e tocável o tempo todo. */
+    val openSearch = {
+        runCatching { searchFocus.requestFocus() }
+        keyboard?.show()
+        Unit
+    }
+    val swipeUp = rememberSwipeUpToSearch(openSearch)
+
+    var contextApp by remember { mutableStateOf<AppEntry?>(null) }
+    var showHidden by remember { mutableStateOf(false) }
+
+    // Voltar limpa a busca. Sem busca não faz nada: aqui já é a tela inicial.
+    BackHandler(enabled = state.query.isNotEmpty()) {
+        viewModel.onClearQuery()
+        focusManager.clearFocus()
+    }
 
     Box(
         modifier = modifier
@@ -63,22 +100,37 @@ fun HomeScreen(
             .padding(horizontal = 20.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            ClockHeader()
+            ClockHeader(modifier = Modifier.swipeUpToSearch(openSearch))
 
             OutlinedTextField(
                 value = state.query,
-                onValueChange = onQueryChange,
+                onValueChange = viewModel::onQueryChange,
                 singleLine = true,
                 shape = RoundedCornerShape(28.dp),
                 placeholder = { Text(stringResource(R.string.search_hint)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                trailingIcon = {
+                    if (state.query.isNotEmpty()) {
+                        IconButton(onClick = viewModel::onClearQuery) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = stringResource(R.string.search_clear),
+                            )
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 8.dp)
+                    .focusRequester(searchFocus),
             )
 
             if (state.favorites.isNotEmpty() && state.query.isEmpty()) {
-                FavoritesRow(favorites = state.favorites, repository = repository)
+                FavoritesRow(
+                    favorites = state.favorites,
+                    repository = repository,
+                    onMoveFavorite = viewModel::onMoveFavorite,
+                )
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
@@ -86,7 +138,8 @@ fun HomeScreen(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(end = INDEX_WIDTH),
+                        .padding(end = INDEX_WIDTH)
+                        .nestedScroll(swipeUp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     items(
@@ -107,7 +160,17 @@ fun HomeScreen(
                                 entry = row.entry,
                                 favorite = row.favorite,
                                 repository = repository,
-                                onToggleFavorite = onToggleFavorite,
+                                onLongPress = { contextApp = row.entry },
+                            )
+                        }
+                    }
+
+                    // Última linha da lista, e só quando há o que mostrar lá dentro.
+                    if (state.hiddenApps.isNotEmpty() && state.query.isEmpty()) {
+                        item(key = "hidden-apps", contentType = "hidden") {
+                            HiddenAppsEntry(
+                                count = state.hiddenApps.size,
+                                onClick = { showHidden = true },
                             )
                         }
                     }
@@ -138,6 +201,34 @@ fun HomeScreen(
             }
         }
     }
+
+    if (state.showWelcome) {
+        WelcomeSheet(
+            repository = repository,
+            onLauncherChosen = viewModel::refreshDefaultLauncher,
+            onDismiss = viewModel::onDismissWelcome,
+        )
+    }
+
+    contextApp?.let { entry ->
+        AppContextSheet(
+            entry = entry,
+            favorite = state.favorites.any { it.key == entry.key },
+            hasShortcutHost = state.hasShortcutHost,
+            repository = repository,
+            viewModel = viewModel,
+            onDismiss = { contextApp = null },
+        )
+    }
+
+    if (showHidden) {
+        HiddenAppsSheet(
+            hidden = state.hiddenApps,
+            repository = repository,
+            onUnhide = viewModel::onUnhide,
+            onDismiss = { showHidden = false },
+        )
+    }
 }
 
 @Composable
@@ -156,17 +247,15 @@ private fun AppRow(
     entry: AppEntry,
     favorite: Boolean,
     repository: AppRepository,
-    onToggleFavorite: (AppEntry) -> Unit,
+    onLongPress: () -> Unit,
 ) {
-    var menuOpen by remember { mutableStateOf(false) }
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = { repository.launch(entry) },
-                onLongClick = { menuOpen = true },
+                onLongClick = onLongPress,
             )
             .padding(vertical = 6.dp),
     ) {
@@ -176,48 +265,36 @@ private fun AppRow(
             text = entry.label,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
         )
+        // Cadeado do perfil privado: o app é o mesmo, o espaço onde ele roda é que não.
+        if (entry.isPrivateProfile) {
+            Spacer(Modifier.width(6.dp))
+            Icon(
+                imageVector = Icons.Outlined.Lock,
+                contentDescription = stringResource(R.string.private_profile),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(LOCK_SIZE),
+            )
+        }
         if (favorite) {
             Spacer(Modifier.width(6.dp))
             Text(text = "•", color = MaterialTheme.colorScheme.primary)
-        }
-
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(if (favorite) R.string.unpin else R.string.pin)) },
-                onClick = {
-                    onToggleFavorite(entry)
-                    menuOpen = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.app_info)) },
-                onClick = {
-                    repository.openAppInfo(entry)
-                    menuOpen = false
-                },
-            )
         }
     }
 }
 
 @Composable
-private fun FavoritesRow(favorites: List<AppEntry>, repository: AppRepository) {
-    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-        Text(
-            text = stringResource(R.string.favorites),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(top = 6.dp),
-        ) {
-            favorites.take(5).forEach { entry ->
-                Box(modifier = Modifier.combinedClickable { repository.launch(entry) }) {
-                    AppIcon(entry = entry, repository = repository, size = ICON_SIZE)
-                }
-            }
-        }
-    }
+private fun HiddenAppsEntry(count: Int, onClick: () -> Unit) {
+    Text(
+        text = stringResource(R.string.hidden_apps_count, count),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick)
+            .padding(top = 24.dp, bottom = 32.dp),
+    )
 }

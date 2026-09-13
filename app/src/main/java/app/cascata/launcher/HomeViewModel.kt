@@ -100,10 +100,19 @@ class HomeViewModel(
         viewModelScope.launch { prefs.toggleFavorite(entry.key) }
     }
 
+    /**
+     * Ordem que o arraste já pediu mas o DataStore ainda não devolveu. Sem isso,
+     * duas trocas seguidas partiriam da mesma foto antiga e a segunda desfaria a
+     * primeira. Vale só enquanto o conjunto de favoritos for o mesmo.
+     */
+    private var pendingFavorites: List<String>? = null
+
     /** Índices são os da lista visível de favoritos, que é o que o usuário arrasta. */
     fun onMoveFavorite(fromIndex: Int, toIndex: Int) {
         val shown = state.value.favorites.map { it.key }
-        val moved = moveItem(shown, fromIndex, toIndex) ?: return
+        val base = pendingFavorites?.takeIf { it.toSet() == shown.toSet() } ?: shown
+        val moved = moveItem(base, fromIndex, toIndex) ?: return
+        pendingFavorites = moved
         viewModelScope.launch {
             // Favoritos que não estão à vista (app oculto ou desinstalado) ficam no fim.
             val rest = prefs.favorites.first().filterNot { it in moved }

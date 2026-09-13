@@ -12,20 +12,25 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.1.0)
+## Estado atual (v0.2.0 — Fase 1 concluída)
 
 | | |
 |---|---|
 | Lista alfabética com cabeçalhos de seção | ✅ |
 | Índice lateral A–Z com arraste e retorno háptico | ✅ |
-| Busca sem acento, por prefixo de palavra | ✅ |
-| Favoritos fixados (DataStore) | ✅ |
+| Busca sem acento, por prefixo de palavra; swipe-up abre com teclado | ✅ |
+| Favoritos ordenáveis por arraste (DataStore) | ✅ |
+| Esconder e renomear apps | ✅ |
+| Atalhos de app no toque longo (quando é o launcher padrão) | ✅ |
+| Pedido para virar launcher padrão (`RoleManager`) | ✅ |
+| Desinstalar por intent, informações do app | ✅ |
 | Relógio + data, acordando só a cada minuto | ✅ |
-| Menu de contexto (fixar, informações do app) | ✅ |
+| Ícones legados mascarados em círculo | ✅ |
+| Perfis de trabalho e perfil privado (Android 15) | ✅ |
 | Atualização automática ao instalar/remover apps | ✅ |
-| Perfis de trabalho (multi-usuário) | ✅ |
 | Material You quando disponível | ✅ |
-| Widgets, gestos, notificações, clima | ainda não |
+| CI com testes, lint e release assinado por tag | ✅ |
+| Temas, at-a-glance, notificações, widgets | próximas fases ([plano](docs/plano.md)) |
 
 ## Tamanho
 

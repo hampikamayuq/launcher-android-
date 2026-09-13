@@ -20,11 +20,13 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.cascata.launcher.R
 
 /**
  * Índice alfabético lateral: arrastar o dedo percorre as letras e leva a lista
@@ -40,6 +42,7 @@ fun AlphabetIndex(
     if (letters.isEmpty()) return
 
     val haptics = LocalHapticFeedback.current
+    val indexLabel = stringResource(R.string.alphabet_index)
     var height by remember { mutableIntStateOf(0) }
     var focused by remember { mutableStateOf<Char?>(null) }
 
@@ -56,7 +59,7 @@ fun AlphabetIndex(
             .width(28.dp)
             .padding(vertical = 8.dp)
             .onSizeChanged { height = it.height }
-            .semantics { contentDescription = "Índice alfabético" }
+            .semantics { contentDescription = indexLabel }
             .pointerInput(letters) {
                 detectVerticalDragGestures(
                     onDragStart = { offset ->
@@ -82,10 +85,12 @@ fun AlphabetIndex(
     ) {
         letters.forEach { letter ->
             val active = letter == focused
+            val jumpLabel = stringResource(R.string.jump_to_letter, letter.toString())
             Text(
                 text = letter.toString(),
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { contentDescription = jumpLabel },
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
                 color = if (active) {
                     MaterialTheme.colorScheme.primary

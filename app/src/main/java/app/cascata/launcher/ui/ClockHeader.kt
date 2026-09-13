@@ -16,18 +16,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 /** Relógio e data. Acorda só no minuto seguinte — nada de tick por segundo. */
 @Composable
 fun ClockHeader(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val locale = Locale.getDefault()
+    // Observável: trocar o idioma do sistema refaz os formatos sem reiniciar o app.
+    val locale = LocalLocale.current.platformLocale
     val timeFormat = remember(locale) {
         SimpleDateFormat(if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a", locale)
     }

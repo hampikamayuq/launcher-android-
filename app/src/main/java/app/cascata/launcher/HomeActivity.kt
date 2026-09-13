@@ -5,8 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cascata.launcher.ui.HomeScreen
 import app.cascata.launcher.ui.theme.CascataTheme
 
@@ -25,14 +23,7 @@ class HomeActivity : ComponentActivity() {
 
         setContent {
             CascataTheme {
-                val state by viewModel.state.collectAsStateWithLifecycle()
-
-                HomeScreen(
-                    state = state,
-                    repository = app.appRepository,
-                    onQueryChange = viewModel::onQueryChange,
-                    onToggleFavorite = viewModel::onToggleFavorite,
-                )
+                HomeScreen(viewModel = viewModel, repository = app.appRepository)
             }
         }
     }

@@ -13,6 +13,7 @@
     <string name="hide">Esconder da lista</string>
     <string name="unhide">Mostrar na lista</string>
     <string name="hidden_apps">Apps escondidos</string>
+    <string name="hidden_apps_count">Apps escondidos (%1$d)</string>
     <string name="rename">Renomear</string>
     <string name="rename_reset">Voltar ao nome original</string>
     <string name="shortcuts">Atalhos</string>
@@ -24,4 +25,6 @@
     <string name="empty_search">Nenhum app para “%1$s”</string>
     <string name="jump_to_letter">Ir para a letra %1$s</string>
     <string name="alphabet_index">Índice alfabético</string>
+    <string name="action_save">Salvar</string>
+    <string name="action_cancel">Cancelar</string>
 </resources>
