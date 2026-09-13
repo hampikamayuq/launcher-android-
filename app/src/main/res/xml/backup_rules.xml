@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android <= 11. Só as preferências (favoritos e ordem); nada de uso. -->
+<!--
+  Android <= 11. Preferências (favoritos, ordem e aparência) e a fonte importada
+  pelo usuário — um tema sem a fonte dele volta errado do backup. Nada de uso.
+-->
 <full-backup-content>
     <include domain="file" path="datastore" />
+    <include domain="file" path="fonts" />
 </full-backup-content>

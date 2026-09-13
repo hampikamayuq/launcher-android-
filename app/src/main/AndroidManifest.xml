@@ -11,6 +11,20 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+
+        <!--
+          Pacotes de ícones do formato aberto: as três ações que eles declaram há
+          anos. Sem isso, queryIntentActivities não enxerga nenhum deles.
+        -->
+        <intent>
+            <action android:name="org.adw.launcher.THEMES" />
+        </intent>
+        <intent>
+            <action android:name="com.novalauncher.THEME" />
+        </intent>
+        <intent>
+            <action android:name="com.gau.go.launcherex.theme" />
+        </intent>
     </queries>
 
     <!--

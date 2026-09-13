@@ -15,6 +15,8 @@ import android.os.UserManager
 import android.provider.Settings
 import android.util.LruCache
 import androidx.annotation.RequiresApi
+import app.cascata.launcher.data.iconpack.IconPackRepository
+import app.cascata.launcher.data.theme.ThemePrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -22,25 +24,37 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.Collator
 
 /** No máximo isso de atalhos por app: o menu de contexto não pode virar uma lista. */
 private const val MAX_SHORTCUTS = 6
 
+/** Um ícone pronto para desenhar, mais de onde ele veio. */
+data class LoadedIcon(val drawable: Drawable, val fromPack: Boolean)
+
 /**
  * Fonte única da lista de apps. Lê via [LauncherApps] (todos os perfis do usuário)
  * e se re-emite sozinha quando algo é instalado, removido ou atualizado.
  */
-class AppRepository(private val context: Context, scope: CoroutineScope) {
+class AppRepository(
+    private val context: Context,
+    scope: CoroutineScope,
+    private val iconPacks: IconPackRepository,
+    private val themePrefs: ThemePrefs,
+) {
 
     private val launcherApps = context.getSystemService(LauncherApps::class.java)
     private val userManager = context.getSystemService(UserManager::class.java)
 
     /** Ícones são caros: mantemos os mais recentes em memória, o resto recarrega sob demanda. */
-    private val iconCache = LruCache<String, Drawable>(200)
+    private val iconCache = LruCache<String, LoadedIcon>(200)
 
     /** Poucos atalhos ficam na tela de cada vez; um cache grande aqui seria desperdício. */
     private val shortcutIconCache = LruCache<String, Drawable>(32)
@@ -49,6 +63,22 @@ class AppRepository(private val context: Context, scope: CoroutineScope) {
         .conflate()
         .map { loadApps() }
         .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    init {
+        // Trocar de pacote de ícones invalida *todos* os ícones de uma vez, e é
+        // raro. Limpar o cache sai mais barato que carregar a chave com o nome do
+        // pacote e guardar dois conjuntos de bitmaps na memória.
+        scope.launch {
+            themePrefs.settings
+                .map { it.iconPack }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    iconCache.evictAll()
+                    iconPacks.invalidate()
+                }
+        }
+    }
 
     private suspend fun loadApps(): List<AppEntry> = withContext(Dispatchers.IO) {
         val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
@@ -79,16 +109,31 @@ class AppRepository(private val context: Context, scope: CoroutineScope) {
         }.getOrDefault(false)
     }
 
-    /** Carrega (e memoriza) o ícone de um app. Chame fora da main thread. */
-    suspend fun icon(entry: AppEntry): Drawable? = withContext(Dispatchers.IO) {
+    /**
+     * Carrega (e memoriza) o ícone de um app: primeiro o pacote de ícones ativo,
+     * e o do sistema quando o pacote não tem esse app. Chame fora da main thread.
+     *
+     * O ícone do pacote não leva o badge de perfil de trabalho — quem tem o badge
+     * é o drawable do sistema —, e é o preço de usar o pacote escolhido.
+     */
+    suspend fun icon(entry: AppEntry): LoadedIcon? = withContext(Dispatchers.IO) {
         iconCache[entry.key]?.let { return@withContext it }
+        // Uma leitura por ícone: o DataStore mantém o valor em memória depois da
+        // primeira, e assim não há corrida entre o cache e a preferência chegando.
+        val pack = themePrefs.settings.first().iconPack
+        val fromPack = pack?.let { runCatching { iconPacks.icon(it, entry.component) }.getOrNull() }
+        if (fromPack != null) {
+            return@withContext LoadedIcon(fromPack, fromPack = true)
+                .also { iconCache.put(entry.key, it) }
+        }
         val info = runCatching {
             launcherApps.getActivityList(entry.component.packageName, entry.user)
                 .firstOrNull { it.componentName == entry.component }
         }.getOrNull() ?: return@withContext null
         val density = context.resources.displayMetrics.densityDpi
         val drawable = runCatching { info.getBadgedIcon(density) }.getOrNull()
-        drawable?.also { iconCache.put(entry.key, it) }
+            ?: return@withContext null
+        LoadedIcon(drawable, fromPack = false).also { iconCache.put(entry.key, it) }
     }
 
     fun launch(entry: AppEntry, sourceBounds: android.graphics.Rect? = null) {

@@ -3,6 +3,10 @@ package app.cascata.launcher
 import android.app.Application
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
+import app.cascata.launcher.data.iconpack.IconPackRepository
+import app.cascata.launcher.data.theme.FontStore
+import app.cascata.launcher.data.theme.ThemePrefs
+import app.cascata.launcher.data.theme.WallpaperColorsSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -14,6 +18,12 @@ import kotlinx.coroutines.SupervisorJob
 class CascataApp : Application() {
 
     val appScope: CoroutineScope by lazy { CoroutineScope(SupervisorJob()) }
-    val appRepository: AppRepository by lazy { AppRepository(this, appScope) }
     val launcherPrefs: LauncherPrefs by lazy { LauncherPrefs(this) }
+    val themePrefs: ThemePrefs by lazy { ThemePrefs(this) }
+    val iconPacks: IconPackRepository by lazy { IconPackRepository(this) }
+    val fontStore: FontStore by lazy { FontStore(this) }
+    val wallpaperColors: WallpaperColorsSource by lazy { WallpaperColorsSource(this) }
+    val appRepository: AppRepository by lazy {
+        AppRepository(this, appScope, iconPacks, themePrefs)
+    }
 }

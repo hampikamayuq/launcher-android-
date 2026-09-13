@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.core.graphics.drawable.toBitmap
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.LoadedIcon
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -108,12 +109,20 @@ private fun IconSurface(raster: RasterIcon?, size: Dp, modifier: Modifier) {
 }
 
 /**
+ * Ícone vindo de um pacote de ícones já chega no formato final do pacote:
+ * mascarar de novo cortaria o desenho de quem escolheu aquele visual. Por isso
+ * ele segue o mesmo caminho do adaptativo — sem máscara.
+ */
+private fun rasterize(icon: LoadedIcon?, px: Int): RasterIcon? =
+    icon?.let { rasterize(it.drawable, px, unmasked = it.fromPack) }
+
+/**
  * Descobre o tipo do drawable e rasteriza de uma vez só, fora da main thread:
  * `is AdaptiveIconDrawable` é barato, mas quem carrega o drawable não é.
  */
-private fun rasterize(drawable: Drawable?, px: Int): RasterIcon? {
+private fun rasterize(drawable: Drawable?, px: Int, unmasked: Boolean = false): RasterIcon? {
     if (drawable == null) return null
-    val adaptive = drawable is AdaptiveIconDrawable
-    val target = if (adaptive) px else (px * LEGACY_SCALE).roundToInt().coerceAtLeast(1)
-    return RasterIcon(drawable.toBitmap(target, target).asImageBitmap(), adaptive)
+    val full = unmasked || drawable is AdaptiveIconDrawable
+    val target = if (full) px else (px * LEGACY_SCALE).roundToInt().coerceAtLeast(1)
+    return RasterIcon(drawable.toBitmap(target, target).asImageBitmap(), full)
 }
