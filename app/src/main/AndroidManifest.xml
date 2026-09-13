@@ -13,6 +13,14 @@
         </intent>
     </queries>
 
+    <!--
+      Permissão normal (concedida na instalação, sem diálogo): serve só para
+      listar os apps do perfil privado do Android 15 quando ele está desbloqueado.
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_HIDDEN_PROFILES"
+        android:minSdkVersion="35" />
+
     <application
         android:name=".CascataApp"
         android:allowBackup="true"

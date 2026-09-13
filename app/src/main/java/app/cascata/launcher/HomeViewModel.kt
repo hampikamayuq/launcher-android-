@@ -1,104 +1,149 @@
 package app.cascata.launcher
 
+import android.content.pm.ShortcutInfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
-import app.cascata.launcher.data.FavoritesStore
-import app.cascata.launcher.data.normalizeLabel
+import app.cascata.launcher.data.LauncherPrefs
+import app.cascata.launcher.data.withAlias
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-/** Uma linha da lista: cabeçalho de seção ou app. */
-sealed interface Row {
-    data class Header(val letter: Char) : Row
-    data class App(val entry: AppEntry, val favorite: Boolean) : Row
-}
+import java.text.Collator
 
 data class HomeUiState(
-    val rows: List<Row> = emptyList(),
+    val rows: List<Row<AppEntry>> = emptyList(),
+    /** Favoritos na ordem escolhida pelo usuário. */
     val favorites: List<AppEntry> = emptyList(),
+    /** Escondidos da lista: só aparecem na tela de gerenciar. */
+    val hiddenApps: List<AppEntry> = emptyList(),
     /** Letra -> índice da linha onde a seção começa. Alimenta o índice alfabético. */
     val sectionIndex: Map<Char, Int> = emptyMap(),
     val query: String = "",
     val loading: Boolean = true,
+    val isDefaultLauncher: Boolean = false,
+    /** Convite para virar a home, até o usuário aceitar ou dispensar. */
+    val showWelcome: Boolean = false,
+    /** Sem isso os atalhos de long-press vêm vazios — é privilégio do launcher padrão. */
+    val hasShortcutHost: Boolean = false,
 )
 
 class HomeViewModel(
     private val repository: AppRepository,
-    private val favoritesStore: FavoritesStore,
+    private val prefs: LauncherPrefs,
 ) : ViewModel() {
 
+    /** O que depende do sistema, não do DataStore; re-lido a cada onResume. */
+    private data class SystemState(
+        val isDefaultLauncher: Boolean = false,
+        val hasShortcutHost: Boolean = false,
+        val welcomeDismissed: Boolean = false,
+    )
+
+    private data class Stored(
+        val favorites: List<String>,
+        val hidden: Set<String>,
+        val aliases: Map<String, String>,
+    )
+
     private val query = MutableStateFlow("")
+    private val system = MutableStateFlow(SystemState())
+
+    private val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
+
+    private val builder = HomeStateBuilder<AppEntry>(
+        key = { it.key },
+        label = { it.label },
+        normalized = { it.normalizedLabel },
+        section = { it.section },
+        withAlias = { entry, alias -> entry.withAlias(alias) },
+        compareLabels = { a, b -> collator.compare(a, b) },
+    )
+
+    private val stored = combine(prefs.favorites, prefs.hidden, prefs.aliases, ::Stored)
 
     val state: StateFlow<HomeUiState> =
-        combine(repository.apps, favoritesStore.favorites, query) { apps, favoriteKeys, q ->
-            buildState(apps, favoriteKeys, q)
+        combine(repository.apps, stored, query, system) { apps, saved, q, sys ->
+            val list = builder.build(apps, saved.favorites, saved.hidden, saved.aliases, q)
+            HomeUiState(
+                rows = list.rows,
+                favorites = list.favorites,
+                hiddenApps = list.hidden,
+                sectionIndex = list.sectionIndex,
+                query = q,
+                loading = apps.isEmpty(),
+                isDefaultLauncher = sys.isDefaultLauncher,
+                showWelcome = !sys.isDefaultLauncher && !sys.welcomeDismissed,
+                hasShortcutHost = sys.hasShortcutHost,
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+
+    init {
+        refreshDefaultLauncher()
+    }
 
     fun onQueryChange(value: String) {
         query.value = value
     }
 
-    fun onToggleFavorite(entry: AppEntry) {
-        viewModelScope.launch { favoritesStore.toggle(entry.key) }
+    fun onClearQuery() {
+        query.value = ""
     }
 
-    private fun buildState(apps: List<AppEntry>, favoriteKeys: Set<String>, q: String): HomeUiState {
-        val favorites = apps.filter { it.key in favoriteKeys }
-        val needle = normalizeLabel(q)
+    fun onToggleFavorite(entry: AppEntry) {
+        viewModelScope.launch { prefs.toggleFavorite(entry.key) }
+    }
 
-        if (needle.isNotEmpty()) {
-            val matches = apps.filter { it.matches(needle) }
-                .sortedWith(compareBy({ it.rank(needle) }, { it.normalizedLabel }))
-            return HomeUiState(
-                rows = matches.map { Row.App(it, it.key in favoriteKeys) },
-                favorites = favorites,
-                query = q,
-                loading = false,
-            )
+    /** Índices são os da lista visível de favoritos, que é o que o usuário arrasta. */
+    fun onMoveFavorite(fromIndex: Int, toIndex: Int) {
+        val shown = state.value.favorites.map { it.key }
+        val moved = moveItem(shown, fromIndex, toIndex) ?: return
+        viewModelScope.launch {
+            // Favoritos que não estão à vista (app oculto ou desinstalado) ficam no fim.
+            val rest = prefs.favorites.first().filterNot { it in moved }
+            prefs.setFavoritesOrder(moved + rest)
         }
+    }
 
-        val rows = ArrayList<Row>(apps.size + 32)
-        val index = LinkedHashMap<Char, Int>()
-        var last: Char? = null
-        for (app in apps) {
-            if (app.section != last) {
-                index[app.section] = rows.size
-                rows += Row.Header(app.section)
-                last = app.section
-            }
-            rows += Row.App(app, app.key in favoriteKeys)
-        }
-        return HomeUiState(
-            rows = rows,
-            favorites = favorites,
-            sectionIndex = index,
-            query = q,
-            loading = apps.isEmpty(),
+    fun onHide(entry: AppEntry) {
+        viewModelScope.launch { prefs.setHidden(entry.key, true) }
+    }
+
+    fun onUnhide(entry: AppEntry) {
+        viewModelScope.launch { prefs.setHidden(entry.key, false) }
+    }
+
+    /** Rótulo nulo ou em branco devolve o nome que o sistema dá ao app. */
+    fun onRename(entry: AppEntry, newLabel: String?) {
+        viewModelScope.launch { prefs.setAlias(entry.key, newLabel) }
+    }
+
+    fun onDismissWelcome() {
+        system.value = system.value.copy(welcomeDismissed = true)
+    }
+
+    /** A Activity chama no onResume: o usuário pode ter trocado a home lá fora. */
+    fun refreshDefaultLauncher() {
+        system.value = system.value.copy(
+            isDefaultLauncher = repository.isDefaultLauncher(),
+            hasShortcutHost = repository.hasShortcutHostPermission(),
         )
     }
 
-    /** Casa no começo do rótulo ou de qualquer palavra dele — nunca no meio de uma palavra. */
-    private fun AppEntry.matches(needle: String): Boolean =
-        normalizedLabel.startsWith(needle) ||
-            normalizedLabel.split(' ').any { it.startsWith(needle) }
-
-    /** Prefixo do rótulo inteiro vem antes de prefixo de palavra interna. */
-    private fun AppEntry.rank(needle: String): Int =
-        if (normalizedLabel.startsWith(needle)) 0 else 1
+    suspend fun shortcutsFor(entry: AppEntry): List<ShortcutInfo> = repository.shortcuts(entry)
 
     class Factory(
         private val repository: AppRepository,
-        private val favoritesStore: FavoritesStore,
+        private val prefs: LauncherPrefs,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            HomeViewModel(repository, favoritesStore) as T
+            HomeViewModel(repository, prefs) as T
     }
 }

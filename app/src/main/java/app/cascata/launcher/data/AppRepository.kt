@@ -1,13 +1,20 @@
 package app.cascata.launcher.data
 
+import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.LauncherApps
+import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Build
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import android.provider.Settings
 import android.util.LruCache
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -19,6 +26,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import java.text.Collator
+
+/** No máximo isso de atalhos por app: o menu de contexto não pode virar uma lista. */
+private const val MAX_SHORTCUTS = 6
 
 /**
  * Fonte única da lista de apps. Lê via [LauncherApps] (todos os perfis do usuário)
@@ -32,6 +42,9 @@ class AppRepository(private val context: Context, scope: CoroutineScope) {
     /** Ícones são caros: mantemos os mais recentes em memória, o resto recarrega sob demanda. */
     private val iconCache = LruCache<String, Drawable>(200)
 
+    /** Poucos atalhos ficam na tela de cada vez; um cache grande aqui seria desperdício. */
+    private val shortcutIconCache = LruCache<String, Drawable>(32)
+
     val apps: Flow<List<AppEntry>> = packageChanges()
         .conflate()
         .map { loadApps() }
@@ -41,19 +54,29 @@ class AppRepository(private val context: Context, scope: CoroutineScope) {
         val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
         val profiles = userManager?.userProfiles ?: listOf(Process.myUserHandle())
         profiles.flatMap { user ->
+            val private = isPrivateProfile(user)
             runCatching { launcherApps.getActivityList(null, user) }.getOrDefault(emptyList())
                 .map { info ->
-                    val label = info.label?.toString().orEmpty().ifEmpty { info.componentName.packageName }
-                    val normalized = normalizeLabel(label)
-                    AppEntry(
+                    appEntry(
                         component = info.componentName,
                         user = user,
-                        label = label,
-                        normalizedLabel = normalized,
-                        section = sectionOf(normalized),
+                        originalLabel = info.label?.toString().orEmpty()
+                            .ifEmpty { info.componentName.packageName },
+                        isPrivateProfile = private,
                     )
                 }
         }.sortedWith { a, b -> collator.compare(a.label, b.label) }
+    }
+
+    /**
+     * Perfil privado existe a partir do Android 15 e só aparece aqui quando está
+     * desbloqueado — a permissão ACCESS_HIDDEN_PROFILES é que nos deixa vê-lo.
+     */
+    private fun isPrivateProfile(user: UserHandle): Boolean {
+        if (Build.VERSION.SDK_INT < 35) return false
+        return runCatching {
+            launcherApps.getLauncherUserInfo(user)?.userType == UserManager.USER_TYPE_PROFILE_PRIVATE
+        }.getOrDefault(false)
     }
 
     /** Carrega (e memoriza) o ícone de um app. Chame fora da main thread. */
@@ -76,10 +99,91 @@ class AppRepository(private val context: Context, scope: CoroutineScope) {
         runCatching { launcherApps.startAppDetailsActivity(entry.component, entry.user, null, null) }
     }
 
+    /** Atalhos só são visíveis para o launcher padrão; sem isso, a lista vem vazia. */
+    fun hasShortcutHostPermission(): Boolean =
+        runCatching { launcherApps.hasShortcutHostPermission() }.getOrDefault(false)
+
+    /** Atalhos declarados no manifesto, dinâmicos e fixados, na ordem de rank do app. */
+    suspend fun shortcuts(entry: AppEntry): List<ShortcutInfo> = withContext(Dispatchers.IO) {
+        if (!hasShortcutHostPermission()) return@withContext emptyList()
+        val query = LauncherApps.ShortcutQuery()
+            .setPackage(entry.component.packageName)
+            .setQueryFlags(
+                LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or
+                    LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                    LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED
+            )
+        runCatching { launcherApps.getShortcuts(query, entry.user) }
+            .getOrNull()
+            .orEmpty()
+            .sortedBy { it.rank }
+            .take(MAX_SHORTCUTS)
+    }
+
+    /** Ícone de um atalho, na densidade da tela. Chame fora da main thread. */
+    suspend fun shortcutIcon(shortcut: ShortcutInfo): Drawable? = withContext(Dispatchers.IO) {
+        val cacheKey = "${shortcut.`package`}#${shortcut.id}"
+        shortcutIconCache[cacheKey]?.let { return@withContext it }
+        val density = context.resources.displayMetrics.densityDpi
+        val drawable = runCatching {
+            launcherApps.getShortcutIconDrawable(shortcut, density)
+        }.getOrNull()
+        drawable?.also { shortcutIconCache.put(cacheKey, it) }
+    }
+
+    fun startShortcut(shortcut: ShortcutInfo) {
+        runCatching { launcherApps.startShortcut(shortcut, null, null) }
+    }
+
+    /**
+     * Desinstalar é um intent para o sistema — quem confirma é o usuário, e o app
+     * continua sem pedir nenhuma permissão de instalação.
+     */
+    fun uninstall(entry: AppEntry) {
+        runCatching {
+            val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${entry.component.packageName}"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(Intent.EXTRA_USER, entry.user)
+            context.startActivity(intent)
+        }
+    }
+
     fun isSystemApp(component: ComponentName, user: UserHandle): Boolean = runCatching {
         val info = launcherApps.getApplicationInfo(component.packageName, 0, user)
         info.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0
     }.getOrDefault(false)
+
+    /** Somos a home do sistema? Atalhos e (mais tarde) widgets dependem disso. */
+    fun isDefaultLauncher(): Boolean = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            roleManager()?.isRoleHeld(RoleManager.ROLE_HOME) == true
+        } else {
+            val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            val resolved = context.packageManager
+                .resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+            resolved?.activityInfo?.packageName == context.packageName
+        }
+    }.getOrDefault(false)
+
+    /**
+     * O diálogo do sistema para virar a home. Do Android 10 em diante é um pedido
+     * de papel (um toque); antes disso só dá para levar às configurações de home.
+     */
+    fun requestDefaultLauncherIntent(): Intent? = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roles = roleManager()
+            if (roles != null &&
+                roles.isRoleAvailable(RoleManager.ROLE_HOME) &&
+                !roles.isRoleHeld(RoleManager.ROLE_HOME)
+            ) {
+                return@runCatching roles.createRequestRoleIntent(RoleManager.ROLE_HOME)
+            }
+        }
+        Intent(Settings.ACTION_HOME_SETTINGS)
+    }.getOrNull()
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun roleManager(): RoleManager? = context.getSystemService(RoleManager::class.java)
 
     /** Emite uma vez de saída e depois a cada mudança no conjunto de pacotes. */
     private fun packageChanges(): Flow<Unit> = callbackFlow {

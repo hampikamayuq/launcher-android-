@@ -2,7 +2,7 @@ package app.cascata.launcher
 
 import android.app.Application
 import app.cascata.launcher.data.AppRepository
-import app.cascata.launcher.data.FavoritesStore
+import app.cascata.launcher.data.LauncherPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -15,5 +15,5 @@ class CascataApp : Application() {
 
     val appScope: CoroutineScope by lazy { CoroutineScope(SupervisorJob()) }
     val appRepository: AppRepository by lazy { AppRepository(this, appScope) }
-    val favoritesStore: FavoritesStore by lazy { FavoritesStore(this) }
+    val launcherPrefs: LauncherPrefs by lazy { LauncherPrefs(this) }
 }
