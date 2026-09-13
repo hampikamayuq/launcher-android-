@@ -16,15 +16,38 @@ android {
         versionName = "0.1.0"
     }
 
+    val keystorePath = System.getenv("CASCATA_KEYSTORE_PATH")
+    val hasReleaseSigning = keystorePath != null && file(keystorePath).exists()
+
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = file(keystorePath!!)
+                storePassword = System.getenv("CASCATA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CASCATA_KEY_ALIAS")
+                keyPassword = System.getenv("CASCATA_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
         }
+    }
+
+    lint {
+        abortOnError = true
+        warningsAsErrors = false
+        checkReleaseBuilds = true
     }
 
     compileOptions {
