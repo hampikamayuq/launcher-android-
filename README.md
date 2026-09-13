@@ -23,6 +23,20 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 | Material You quando disponível | ✅ |
 | Widgets, gestos, notificações, clima | ainda não |
 
+## Tamanho
+
+| | Cascata 0.1.0 (release, R8) | Niagara 1.16.28 |
+|---|---|---|
+| APK | **1,29 MB** | 13,4 MB |
+| `classes.dex` | 1,02 MB — 2.704 classes, 14.501 métodos | 5,19 MB — 12.713 classes, 63.093 métodos |
+| `resources.arsc` | 98 KB | 5,20 MB |
+| Entradas no APK | 106 | 1.834 |
+| Permissões | nenhuma | 26 |
+
+A comparação não é justa em recursos — o Niagara entrega 116 locales, temas e
+vídeos, e este aqui ainda não faz metade do que aquele faz. Serve como linha de
+base: é o custo de um launcher funcional antes de qualquer gordura.
+
 ## Decisões que valem explicar
 
 - **Sem `QUERY_ALL_PACKAGES`.** A visibilidade de pacotes vem de um `<queries>`
