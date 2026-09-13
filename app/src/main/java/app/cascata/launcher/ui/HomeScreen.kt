@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
@@ -65,6 +66,8 @@ import app.cascata.launcher.ui.clock.ClockHeader
 import app.cascata.launcher.ui.glance.GlanceRow
 import app.cascata.launcher.ui.notifications.NotificationBadge
 import app.cascata.launcher.ui.notifications.NotificationInline
+import app.cascata.launcher.ui.search.calculationItem
+import app.cascata.launcher.ui.search.searchExtraItems
 import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
 import app.cascata.launcher.ui.theme.LocalLauncherDensity
 import app.cascata.launcher.ui.theme.iconSize
@@ -102,6 +105,8 @@ fun HomeScreen(
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
     val notificationSettings by viewModel.notificationSettings.collectAsStateWithLifecycle()
     val notificationsConnected by viewModel.notificationsConnected.collectAsStateWithLifecycle()
+    // O que a busca acha além dos apps. Tudo vazio com a query em branco.
+    val extras by viewModel.searchExtras.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -178,6 +183,23 @@ fun HomeScreen(
                 shape = RoundedCornerShape(28.dp),
                 placeholder = { Text(stringResource(R.string.search_hint)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                // A tecla de busca abre o melhor resultado que existir: o
+                // primeiro app, senão o primeiro atalho, senão a web.
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        val app = state.rows.firstNotNullOfOrNull { (it as? UiRow.App)?.entry }
+                        val shortcut = extras.shortcuts.firstOrNull()
+                        when {
+                            app != null -> repository.launch(app)
+                            shortcut != null -> viewModel.onOpenShortcut(shortcut)
+                            extras.web != null -> viewModel.onWebSearch()
+                            // Nada para abrir: a query fica onde está.
+                            else -> return@KeyboardActions
+                        }
+                        viewModel.onClearQuery()
+                        focusManager.clearFocus()
+                    },
+                ),
                 trailingIcon = {
                     if (state.query.isNotEmpty()) {
                         IconButton(onClick = viewModel::onClearQuery) {
@@ -218,7 +240,9 @@ fun HomeScreen(
             }
             // Os widgets são um item da lista antes de todas as linhas: o índice
             // dentro do `items` não muda, mas o da LazyColumn inteira anda um.
-            val widgetItems = if (widgetLayout.slots.isNotEmpty()) 1 else 0
+            // Durante a busca a lista é só resultado: os widgets voltam quando
+            // a query esvazia, junto com o índice alfabético.
+            val widgetItems = if (widgetLayout.slots.isNotEmpty() && state.query.isEmpty()) 1 else 0
 
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
@@ -240,6 +264,10 @@ fun HomeScreen(
                             )
                         }
                     }
+
+                    // Antes das linhas de app: quem digitou uma conta quer o
+                    // número, não a gaveta.
+                    extras.calculation?.let { calculationItem(it) }
 
                     items(
                         count = state.rows.size + if (expandedRow != null) 1 else 0,
@@ -303,6 +331,18 @@ fun HomeScreen(
                         }
                     }
 
+                    // Depois dos apps: atalhos, contatos, configurações e web.
+                    searchExtraItems(
+                        extras = extras,
+                        repository = repository,
+                        onOpenShortcut = viewModel::onOpenShortcut,
+                        onOpenContact = viewModel::onOpenContact,
+                        onCallContact = viewModel::onCallContact,
+                        onMessageContact = viewModel::onMessageContact,
+                        onOpenSetting = viewModel::onOpenSetting,
+                        onWebSearch = viewModel::onWebSearch,
+                    )
+
                     // Última linha da lista, e só quando há o que mostrar lá dentro.
                     if (state.hiddenApps.isNotEmpty() && state.query.isEmpty()) {
                         item(key = "hidden-apps", contentType = "hidden") {
@@ -331,7 +371,12 @@ fun HomeScreen(
                     )
                 }
 
-                if (state.rows.isEmpty() && !state.loading && state.query.isNotEmpty()) {
+                // A mensagem só sobra quando nenhuma seção achou nada. Se só a
+                // web existe, ela aparece sozinha — buscar lá fora é uma resposta.
+                val nothingFound = state.rows.isEmpty() && extras.calculation == null &&
+                    extras.shortcuts.isEmpty() && extras.contacts.isEmpty() &&
+                    extras.settings.isEmpty() && extras.web == null
+                if (nothingFound && !state.loading && state.query.isNotEmpty()) {
                     Text(
                         text = stringResource(R.string.empty_search, state.query),
                         style = MaterialTheme.typography.bodyMedium,

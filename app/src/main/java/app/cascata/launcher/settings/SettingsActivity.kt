@@ -43,6 +43,9 @@ import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.notifications.NotificationAccess
 import app.cascata.launcher.data.notifications.NotificationPrefs
 import app.cascata.launcher.data.notifications.NotificationSettings
+import app.cascata.launcher.data.search.ContactsSource
+import app.cascata.launcher.data.search.SearchPrefs
+import app.cascata.launcher.data.search.SearchSettings
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.ThemeSettings
@@ -77,6 +80,8 @@ class SettingsActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = NotificationSettings.DEFAULT)
             val widgets by app.widgetPrefs.layout
                 .collectAsStateWithLifecycle(initialValue = WidgetLayout.EMPTY)
+            val search by app.searchPrefs.settings
+                .collectAsStateWithLifecycle(initialValue = SearchSettings.DEFAULT)
 
             // O acesso a notificações é concedido numa tela do sistema: nada
             // avisa quando ele muda, então relemos ao voltar para cá.
@@ -107,6 +112,7 @@ class SettingsActivity : ComponentActivity() {
                     glance = glance,
                     notifications = notifications,
                     widgets = widgets,
+                    search = search,
                     hasListenerAccess = listenerAccess,
                     customFont = customFont,
                     themePrefs = app.themePrefs,
@@ -118,6 +124,8 @@ class SettingsActivity : ComponentActivity() {
                     notificationAccess = app.notificationAccess,
                     widgetHost = app.widgetHost,
                     widgetPrefs = app.widgetPrefs,
+                    searchPrefs = app.searchPrefs,
+                    contactsSource = app.contactsSource,
                     appRepository = app.appRepository,
                     fontStore = app.fontStore,
                     iconPacks = app.iconPacks,
@@ -139,6 +147,7 @@ private fun SettingsScreen(
     glance: GlanceSettings,
     notifications: NotificationSettings,
     widgets: WidgetLayout,
+    search: SearchSettings,
     hasListenerAccess: Boolean,
     customFont: File?,
     themePrefs: ThemePrefs,
@@ -150,6 +159,8 @@ private fun SettingsScreen(
     notificationAccess: NotificationAccess,
     widgetHost: WidgetHostManager,
     widgetPrefs: WidgetPrefs,
+    searchPrefs: SearchPrefs,
+    contactsSource: ContactsSource,
     appRepository: AppRepository,
     fontStore: FontStore,
     iconPacks: IconPackRepository,
@@ -207,6 +218,11 @@ private fun SettingsScreen(
                 host = widgetHost,
                 prefs = widgetPrefs,
                 repository = appRepository,
+            )
+            SearchSection(
+                search = search,
+                prefs = searchPrefs,
+                contactsSource = contactsSource,
             )
             FontSection(
                 settings = settings,

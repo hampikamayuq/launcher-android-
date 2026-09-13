@@ -204,6 +204,26 @@
     <string name="setting_about">Sobre o telefone</string>
     <string name="setting_home">Tela inicial padrão</string>
 
+    <!-- Fase 6: as seções que a busca mostra além dos apps. -->
+    <string name="search_section_contacts">Contatos</string>
+    <string name="search_section_settings">Configurações do sistema</string>
+    <string name="search_calculation_description">Resultado %1$s, toque para copiar</string>
+    <string name="search_copied">Copiado</string>
+    <string name="search_shortcut_description">%1$s, atalho de %2$s</string>
+    <string name="search_contact_open">Abrir contato %1$s</string>
+    <string name="search_contact_call">Ligar para %1$s</string>
+    <string name="search_contact_message">Mensagem para %1$s</string>
+    <string name="search_setting_description">Abrir %1$s nas configurações do sistema</string>
+    <string name="search_web">Buscar “%1$s” no %2$s</string>
+
+    <string name="section_search">Busca</string>
+    <string name="search_engine">Motor de busca</string>
+    <string name="search_show_shortcuts">Atalhos de apps</string>
+    <string name="search_show_calculator">Calculadora</string>
+    <string name="search_show_web">Buscar na web</string>
+    <string name="search_contacts_denied">Permissão de contatos negada. Ative nas configurações do sistema.</string>
+    <string name="search_footer">A busca na web abre o seu navegador. O Cascata não faz nenhuma requisição por conta própria.</string>
+
     <string name="section_font">Fonte</string>
     <string name="font_system">Do sistema</string>
     <string name="font_custom">Personalizada…</string>

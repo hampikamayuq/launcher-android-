@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0 — Fase 6: busca que resolve
+
+- Calculadora na busca (EvalEx, Apache-2.0): "2+2", "15% de 200", "3,5*2",
+  "sqrt(16)", "2^10"; toque copia o resultado.
+- Atalhos de apps nos resultados (quando o Cascata é o launcher padrão).
+- Contatos (`READ_CONTACTS` pedida só ao ligar): abrir, ligar, mensagem — tudo
+  por intent.
+- Configurações do sistema: 18 telas com sinônimos, só as que o aparelho tem.
+- Buscar na web no motor escolhido (DuckDuckGo, Startpage, Brave, Ecosia,
+  Google, Bing) abrindo o navegador — sem `INTERNET`, funciona na edição lite.
+- Tolerância a um erro de letra em consultas de 4+ caracteres ("whatsap",
+  "telgram").
+- Tecla de busca do teclado abre o primeiro resultado.
+- Seção Busca nas configurações. Durante a busca só aparecem resultados.
+- 185 testes de unidade por variante (45 novos).
+
 ## 0.6.0 — Fase 5: widgets
 
 - Widgets acima da lista de apps, largura total, altura em células de 72 dp;

@@ -42,6 +42,8 @@ class HomeActivity : ComponentActivity() {
             // Contexto da aplicação: a resposta direta dispara um PendingIntent
             // que pode sobreviver a esta Activity.
             applicationContext,
+            app.searchPrefs,
+            app.contactsSource,
         )
     }
 

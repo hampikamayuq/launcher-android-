@@ -1,5 +1,8 @@
 package app.cascata.launcher.settings
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,6 +22,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -257,5 +262,26 @@ internal fun PercentSlider(
             steps = steps,
             modifier = Modifier.semantics { contentDescription = label },
         )
+    }
+}
+
+/**
+ * Depois de "não perguntar de novo" o diálogo não volta — o único caminho é a
+ * tela do app nas configurações do sistema. Vale para toda permissão negada
+ * nesta tela, não só para a dos cards.
+ */
+@Composable
+internal fun AppSettingsButton() {
+    val context = LocalContext.current
+    TextButton(
+        onClick = {
+            val intent = Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null),
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(intent) }
+        },
+    ) {
+        Text(stringResource(R.string.glance_open_app_settings))
     }
 }

@@ -12,10 +12,11 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.6.0 — Fases 1 a 5 concluídas)
+## Estado atual (v0.7.0 — Fases 1 a 6 concluídas)
 
 | | |
 |---|---|
+| Busca ampliada: calculadora, atalhos, contatos, configurações do sistema, web por intent, tolerância a 1 erro | ✅ |
 | Widgets acima da lista: pilha com swipe, redimensionar, mover, restauração após backup | ✅ |
 | Notificações na lista: badge por app, expansão inline com ações e resposta direta | ✅ |
 | Card de mídia com controles | ✅ |
@@ -41,7 +42,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| Busca ampliada, uso opcional, backup em arquivo, publicação | próximas fases ([plano](docs/plano.md)) |
+| Uso opcional, backup em arquivo, publicação | próximas fases ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -64,7 +65,8 @@ base: é o custo de um launcher funcional antes de qualquer gordura.
   permissão de maior alcance do Android.
 - **Permissão só quando a função liga.** O app instala sem pedir nada. Ligar o
   card de agenda pede `READ_CALENDAR`; ligar o de clima pede localização
-  grosseira. Card desligado é permissão não pedida e fonte não consultada.
+  grosseira; ligar contatos na busca pede `READ_CONTACTS`. Recurso desligado é
+  permissão não pedida e fonte não consultada.
 - **Duas edições, mesmo app.** `lite` compila **sem `INTERNET`** — o card de
   clima nem aparece. `full` traz `INTERNET` e `ACCESS_COARSE_LOCATION` por uma
   única razão, o clima (Open-Meteo, sem chave, coordenadas arredondadas a ~1 km,
@@ -112,6 +114,7 @@ app/src/main/java/app/cascata/launcher/
 │   ├── iconpack/              # pacotes no formato aberto (appfilter.xml)
 │   ├── glance/                # alarme, bateria, agenda, mídia, weather/
 │   ├── notifications/         # store em memória, texto, agrupamento, prefs
+│   ├── search/                # calculadora (EvalEx), contatos, web, configurações do sistema
 │   └── widgets/               # WidgetLayout (puro), WidgetPrefs, WidgetHostManager
 ├── notifications/             # CascataNotificationListener (bind só do sistema)
 ├── widgets/                   # WidgetPickerActivity, AppWidgetsRestoredReceiver
@@ -121,6 +124,7 @@ app/src/main/java/app/cascata/launcher/
     ├── clock/                 # quatro estilos de relógio
     ├── glance/                # chips do topo
     ├── notifications/         # badge e expansão inline
+    ├── search/                # resultados extras da busca
     ├── widgets/               # área de widgets, pilha, folha de edição
     └── theme/                 # CascataTheme, Fonts
 app/src/full/                  # clima Open-Meteo + INTERNET/COARSE_LOCATION

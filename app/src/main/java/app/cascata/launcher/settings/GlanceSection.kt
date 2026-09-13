@@ -1,16 +1,12 @@
 package app.cascata.launcher.settings
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -191,25 +186,5 @@ internal fun GlanceSection(
                 .fillMaxWidth()
                 .padding(horizontal = SIDE_PADDING, vertical = 8.dp),
         )
-    }
-}
-
-/**
- * Depois de "não perguntar de novo" o diálogo não volta — o único caminho é a
- * tela do app nas configurações do sistema.
- */
-@Composable
-private fun AppSettingsButton() {
-    val context = LocalContext.current
-    TextButton(
-        onClick = {
-            val intent = Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.fromParts("package", context.packageName, null),
-            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            runCatching { context.startActivity(intent) }
-        },
-    ) {
-        Text(stringResource(R.string.glance_open_app_settings))
     }
 }
