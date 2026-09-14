@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Cascata</string>
+    <string name="search_hint">Buscar apps</string>
+    <string name="search_open">Abrir búsqueda</string>
+    <string name="search_close">Cerrar búsqueda</string>
+    <string name="search_clear">Borrar búsqueda</string>
+    <string name="favorites">Favoritos</string>
+    <string name="pin">Fijar en favoritos</string>
+    <string name="unpin">Quitar de favoritos</string>
+    <string name="app_info">Información de la app</string>
+    <string name="uninstall">Desinstalar</string>
+    <string name="hide">Ocultar de la lista</string>
+    <string name="unhide">Mostrar en la lista</string>
+    <string name="hidden_apps">Apps ocultas</string>
+    <string name="hidden_apps_count">Apps ocultas (%1$d)</string>
+    <string name="rename">Cambiar nombre</string>
+    <string name="rename_reset">Restaurar el nombre original</string>
+    <string name="shortcuts">Accesos directos</string>
+    <string name="welcome_title">Usar Cascata como pantalla de inicio</string>
+    <string name="welcome_body">Como pantalla de inicio predeterminada, Cascata muestra los accesos directos de tus apps y responde al botón de inicio.</string>
+    <string name="welcome_action">Establecer como predeterminada</string>
+    <string name="welcome_dismiss">Ahora no</string>
+    <string name="private_profile">Perfil privado</string>
+    <string name="empty_search">No hay apps para “%1$s”</string>
+    <string name="jump_to_letter">Ir a la letra %1$s</string>
+    <string name="alphabet_index">Índice alfabético</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_back">Atrás</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_restore">Restaurar</string>
+
+    <string name="settings">Ajustes</string>
+    <string name="settings_open">Abrir ajustes</string>
+    <string name="percent">%1$d%%</string>
+
+    <string name="section_appearance">Apariencia</string>
+    <string name="dark_mode">Modo oscuro</string>
+    <string name="dark_mode_system">Sistema</string>
+    <string name="dark_mode_light">Claro</string>
+    <string name="dark_mode_dark">Oscuro</string>
+    <string name="colors">Colores</string>
+    <string name="color_source_system">Sistema</string>
+    <string name="color_source_wallpaper">Fondo de pantalla</string>
+    <string name="color_source_accent">Color de acento</string>
+    <string name="color_swatch">Color %1$d</string>
+    <string name="color_swatch_selected">Color %1$d, seleccionado</string>
+    <string name="color_custom">Color personalizado</string>
+    <string name="color_custom_selected">Color personalizado, seleccionado</string>
+    <string name="color_custom_title">Color personalizado</string>
+    <string name="color_custom_hint">Seis dígitos hexadecimales, como #2E5AAC</string>
+    <string name="color_custom_invalid">Usa seis dígitos hexadecimales, como #2E5AAC</string>
+    <string name="background_opacity">Opacidad del fondo</string>
+    <string name="density">Densidad</string>
+    <string name="density_compact">Compacta</string>
+    <string name="density_default">Predeterminada</string>
+    <string name="density_comfortable">Cómoda</string>
+    <string name="font_scale">Tamaño del texto</string>
+
+    <string name="section_glance">Vista rápida</string>
+    <string name="clock_style">Reloj</string>
+    <string name="clock_style_basic">Simple</string>
+    <string name="clock_style_big">Grande</string>
+    <string name="clock_style_two_line">Dos líneas</string>
+    <string name="clock_style_analog">Analógico</string>
+    <string name="glance_alarm">Próxima alarma</string>
+    <string name="glance_battery">Batería</string>
+    <string name="glance_calendar">Próximo evento</string>
+    <string name="glance_weather">Clima</string>
+    <string name="glance_weather_unavailable">Disponible en la edición completa</string>
+    <string name="glance_calendar_denied">Permiso de calendario denegado. Actívalo en los ajustes del sistema.</string>
+    <string name="glance_location_denied">Permiso de ubicación denegado. Actívalo en los ajustes del sistema.</string>
+    <string name="glance_open_app_settings">Abrir ajustes de la app</string>
+    <string name="glance_footer">Cada tarjeta pide solo el permiso que usa, en el momento en que la activas.</string>
+    <string name="temperature_unit">Unidad</string>
+    <string name="temperature_celsius">°C</string>
+    <string name="temperature_fahrenheit">°F</string>
+
+    <string name="glance_alarm_tomorrow">mañana %1$s</string>
+    <string name="glance_alarm_day">%1$s %2$s</string>
+    <string name="glance_alarm_description">Próxima alarma %1$s</string>
+    <!--
+      Solo los lectores de pantalla leen estas dos: la frase funciona igual con
+      cualquier cantidad, así que no hacen falta plurals aquí.
+    -->
+    <string name="glance_battery_description" tools:ignore="PluralsCandidate">Batería al %1$d por ciento</string>
+    <string name="glance_battery_description_charging" tools:ignore="PluralsCandidate">Batería al %1$d por ciento, cargando</string>
+    <string name="glance_calendar_all_day">Todo el día</string>
+    <string name="glance_calendar_more">+%1$d</string>
+    <string name="glance_calendar_description">Próximo evento: %1$s, %2$s</string>
+    <string name="glance_calendar_description_more">Próximo evento: %1$s, %2$s, y %3$d más</string>
+    <string name="glance_weather_temperature">%1$d°</string>
+    <string name="glance_weather_empty">Toca para actualizar</string>
+    <string name="glance_weather_empty_description">Sin datos del clima. Toca para actualizar.</string>
+    <string name="glance_weather_description">Clima %1$s, %2$s</string>
+    <string name="glance_weather_updating">Actualizando el clima</string>
+    <string name="glance_weather_failed">No se pudo actualizar</string>
+    <string name="weather_clear">cielo despejado</string>
+    <string name="weather_partly_cloudy">parcialmente nublado</string>
+    <string name="weather_cloudy">nublado</string>
+    <string name="weather_fog">niebla</string>
+    <string name="weather_drizzle">llovizna</string>
+    <string name="weather_rain">lluvia</string>
+    <string name="weather_snow">nieve</string>
+    <string name="weather_thunderstorm">tormenta</string>
+    <string name="weather_unknown">condición desconocida</string>
+
+    <!-- Nombre del servicio en la lista de acceso a notificaciones del sistema. -->
+    <string name="notification_listener_label">Notificaciones de Cascata</string>
+
+    <string name="section_notifications">Notificaciones</string>
+    <string name="notifications_enabled">Notificaciones en la lista</string>
+    <string name="notifications_access_granted">Acceso concedido</string>
+    <string name="notifications_access_missing">Toca para conceder el acceso en los ajustes del sistema</string>
+    <string name="notifications_access_revoke">Para revocar el acceso, usa los ajustes del sistema</string>
+    <string name="notifications_access_open">Abrir</string>
+    <string name="notifications_badge_style">Indicador</string>
+    <string name="notifications_badge_count">Contador</string>
+    <string name="notifications_badge_dot">Punto</string>
+    <string name="notifications_expand_inline">Expandir en la lista</string>
+    <string name="notifications_show_media">Tarjeta de reproducción</string>
+    <string name="notifications_muted">Apps silenciadas</string>
+    <string name="notifications_muted_none">Ninguna</string>
+    <plurals name="notifications_muted_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="many">%1$d de apps</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <string name="notifications_footer">Las notificaciones solo quedan en memoria mientras están en la barra del sistema. No se guarda nada.</string>
+
+    <!-- Solo el número dentro del círculo del indicador. -->
+    <string name="notification_badge_number">%1$d</string>
+    <string name="notification_badge_overflow">9+</string>
+    <plurals name="notification_badge_description">
+        <item quantity="one">%1$d notificación de %2$s</item>
+        <item quantity="many">%1$d de notificaciones de %2$s</item>
+        <item quantity="other">%1$d notificaciones de %2$s</item>
+    </plurals>
+    <string name="notification_dismiss">Descartar</string>
+    <string name="notification_dismiss_all">Descartar todas</string>
+    <string name="notification_reply_hint">Responder</string>
+    <string name="notification_reply_send">Enviar respuesta</string>
+    <!-- Abreviaturas de tiempo: se mantienen como abreviaturas simples, no como plurals, igual que en el original. -->
+    <string name="notification_time_now">ahora</string>
+    <string name="notification_time_minutes" tools:ignore="PluralsCandidate">%1$d min</string>
+    <string name="notification_time_hours" tools:ignore="PluralsCandidate">%1$d h</string>
+    <string name="notification_time_yesterday">ayer</string>
+    <string name="notification_time_days" tools:ignore="PluralsCandidate">%1$d d</string>
+
+    <string name="media_untitled">Multimedia</string>
+    <string name="media_description">Reproduciendo: %1$s, %2$s</string>
+    <string name="media_description_title">Reproduciendo: %1$s</string>
+    <string name="media_previous">Pista anterior</string>
+    <string name="media_play">Reproducir</string>
+    <string name="media_pause">Pausar</string>
+    <string name="media_next">Pista siguiente</string>
+
+    <string name="section_widgets">Widgets</string>
+    <string name="widget_add">Agregar widget…</string>
+    <string name="widget_picker_title">Agregar widget</string>
+    <string name="widget_picker_empty">Ninguna app instalada ofrece widgets.</string>
+    <string name="widget_unavailable">Widget no disponible</string>
+    <string name="widget_remove">Quitar</string>
+    <string name="widget_edit">Editar widget</string>
+    <string name="widget_slot_title">Widget</string>
+    <string name="widget_height">Altura</string>
+    <string name="widget_height_decrease">Reducir la altura</string>
+    <string name="widget_height_increase">Aumentar la altura</string>
+    <string name="widget_move_up">Mover hacia arriba</string>
+    <string name="widget_move_down">Mover hacia abajo</string>
+    <string name="widget_add_to_stack">Agregar a la pila</string>
+    <string name="widget_stack_position">Widget %1$d de %2$d</string>
+    <plurals name="widget_cells">
+        <item quantity="one">%1$d celda</item>
+        <item quantity="many">%1$d de celdas</item>
+        <item quantity="other">%1$d celdas</item>
+    </plurals>
+    <string name="widgets_none">No hay widgets en la pantalla de inicio</string>
+    <string name="widgets_not_default">Cascata no es la pantalla de inicio predeterminada: el sistema puede pedir autorización al agregar el primer widget.</string>
+    <string name="widgets_footer">Los widgets aparecen sobre la lista de apps. Toca el ícono en la esquina de cada uno para redimensionar, apilar o mover.</string>
+
+    <!--
+      Fase 6: nombres de las pantallas del sistema en el índice de búsqueda. Son
+      los nombres que usa Android, para que el resultado coincida con lo que ve
+      el usuario ahí dentro.
+    -->
+    <string name="setting_wifi">Wi-Fi</string>
+    <string name="setting_bluetooth">Bluetooth</string>
+    <string name="setting_display">Pantalla</string>
+    <string name="setting_sound">Sonido</string>
+    <string name="setting_battery">Batería</string>
+    <string name="setting_apps">Apps</string>
+    <string name="setting_storage">Almacenamiento</string>
+    <string name="setting_datetime">Fecha y hora</string>
+    <string name="setting_languages">Idiomas</string>
+    <string name="setting_accessibility">Accesibilidad</string>
+    <string name="setting_security">Seguridad</string>
+    <string name="setting_location">Ubicación</string>
+    <string name="setting_notifications">Notificaciones del sistema</string>
+    <string name="setting_mobile_network">Red móvil</string>
+    <string name="setting_airplane">Modo avión</string>
+    <string name="setting_accounts">Cuentas</string>
+    <string name="setting_about">Acerca del teléfono</string>
+    <string name="setting_home">Pantalla de inicio predeterminada</string>
+
+    <!-- Fase 6: las secciones que la búsqueda muestra además de las apps. -->
+    <string name="search_section_contacts">Contactos</string>
+    <string name="search_section_settings">Ajustes del sistema</string>
+    <string name="search_calculation_description">Resultado %1$s, toca para copiar</string>
+    <string name="search_copied">Copiado</string>
+    <string name="search_shortcut_description">%1$s, acceso directo de %2$s</string>
+    <string name="search_contact_open">Abrir contacto %1$s</string>
+    <string name="search_contact_call">Llamar a %1$s</string>
+    <string name="search_contact_message">Mensaje para %1$s</string>
+    <string name="search_setting_description">Abrir %1$s en los ajustes del sistema</string>
+    <string name="search_web">Buscar “%1$s” en %2$s</string>
+
+    <string name="section_search">Búsqueda</string>
+    <string name="search_engine">Motor de búsqueda</string>
+    <string name="search_show_shortcuts">Accesos directos de apps</string>
+    <string name="search_show_calculator">Calculadora</string>
+    <string name="search_show_web">Buscar en la web</string>
+    <string name="search_contacts_denied">Permiso de contactos denegado. Actívalo en los ajustes del sistema.</string>
+    <string name="search_footer">La búsqueda en la web abre tu navegador. Cascata no hace ninguna solicitud por su cuenta.</string>
+
+    <!--
+      Fase 7: uso del dispositivo. El título de la sección y la etiqueta del
+      interruptor principal son el mismo texto: la sección es ese interruptor y
+      lo que activa.
+    -->
+    <string name="section_usage">Uso del dispositivo</string>
+    <string name="usage_access_granted">Acceso concedido</string>
+    <string name="usage_access_missing">Toca para conceder el acceso en los ajustes del sistema</string>
+    <string name="usage_access_open">Abrir</string>
+    <string name="usage_show_card">Tarjeta de uso de hoy</string>
+    <string name="usage_pause">Pausa antes de abrir</string>
+    <!-- Segundos en el control deslizante de la pausa: se mantiene como abreviatura simple, no como plural. -->
+    <string name="usage_pause_seconds" tools:ignore="PluralsCandidate">%1$d s</string>
+    <string name="usage_limits">Límites por app</string>
+    <string name="usage_limits_none">Ninguno</string>
+    <plurals name="usage_limits_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="many">%1$d de apps</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <string name="usage_footer">Los datos vienen del sistema; Cascata no guarda tu historial de uso.</string>
+
+    <string name="usage_today">Uso de hoy</string>
+    <!-- Abreviaturas de la tarjeta y la hoja: se mantienen como abreviaturas simples, no como plurals. -->
+    <string name="usage_minutes" tools:ignore="PluralsCandidate">%1$d min</string>
+    <string name="usage_hours" tools:ignore="PluralsCandidate">%1$d h</string>
+    <string name="usage_hours_minutes">%1$d h %2$d min</string>
+    <!-- Solo los lectores de pantalla leen las tres siguientes: el tiempo se dice en palabras. -->
+    <plurals name="usage_spoken_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="many">%1$d de horas</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+    <plurals name="usage_spoken_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="many">%1$d de minutos</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+    <string name="usage_spoken_hours_minutes">%1$s y %2$s</string>
+    <string name="usage_chip_description">Uso de hoy: %1$s, más usada: %2$s</string>
+
+    <string name="usage_limit_value">Límite: %1$d min</string>
+    <string name="usage_limit_none">Sin límite</string>
+    <string name="usage_limit_field">Minutos por día</string>
+    <string name="usage_limit_remove">Quitar límite</string>
+
+    <plurals name="usage_pause_used">
+        <item quantity="one">Ya usaste %1$d minuto hoy.</item>
+        <item quantity="many">Ya usaste %1$d de minutos hoy.</item>
+        <item quantity="other">Ya usaste %1$d minutos hoy.</item>
+    </plurals>
+    <plurals name="usage_pause_limit">
+        <item quantity="one">El límite es %1$d minuto.</item>
+        <item quantity="many">El límite es %1$d de minutos.</item>
+        <item quantity="other">El límite es %1$d minutos.</item>
+    </plurals>
+    <plurals name="usage_pause_countdown">
+        <item quantity="one">%1$d segundo</item>
+        <item quantity="many">%1$d de segundos</item>
+        <item quantity="other">%1$d segundos</item>
+    </plurals>
+    <string name="usage_pause_open">Abrir de todos modos</string>
+
+    <string name="section_font">Fuente</string>
+    <string name="font_system">Del sistema</string>
+    <string name="font_custom">Personalizada…</string>
+    <string name="font_custom_replace">Cambiar archivo…</string>
+    <string name="font_custom_remove">Quitar fuente personalizada</string>
+    <string name="font_import_failed">No se pudo importar la fuente</string>
+
+    <string name="section_icons">Íconos</string>
+    <string name="icon_pack">Paquete de íconos</string>
+    <string name="icon_pack_system">Íconos del sistema</string>
+    <string name="icon_pack_empty">No hay paquetes de íconos instalados. Los paquetes de formato abierto, los que traen un appfilter.xml, aparecen aquí en cuanto instales uno desde la tienda de apps del dispositivo.</string>
+
+    <string name="section_wallpaper">Fondo de pantalla</string>
+    <string name="wallpaper_change">Cambiar fondo de pantalla</string>
+
+    <string name="section_theme">Tema</string>
+    <string name="theme_export">Exportar tema…</string>
+    <string name="theme_export_failed">No se pudo exportar el tema</string>
+    <string name="theme_import">Importar tema…</string>
+    <string name="theme_import_failed">No se pudo importar el tema</string>
+    <string name="theme_reset">Restaurar valores predeterminados</string>
+    <string name="theme_reset_body">¿Restaurar toda la apariencia a los valores predeterminados? Los favoritos, los apodos y las apps ocultas quedan como están.</string>
+
+    <string name="section_about">Acerca de</string>
+    <string name="about_version">Versión %1$s</string>
+    <string name="about_licenses">Fuentes y bibliotecas de terceros</string>
+    <string name="about_licenses_body">Outfit, Sora y Atkinson Hyperlegible — SIL Open Font License 1.1.\n\nJetpack Compose, AndroidX y la biblioteca estándar de Kotlin — Apache License 2.0.</string>
+</resources>
