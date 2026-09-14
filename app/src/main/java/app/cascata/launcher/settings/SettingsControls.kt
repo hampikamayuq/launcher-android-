@@ -60,19 +60,32 @@ internal fun SettingsSection(title: String, content: @Composable ColumnScope.() 
     }
 }
 
-/** Linha tocável: rótulo e, quando existe, o valor atual embaixo. */
+/**
+ * Linha tocável: rótulo e, quando existe, o valor atual embaixo. Desligada
+ * ([enabled] false) ela mostra o estado sem prometer que tocá-la faz algo, como
+ * a [SwitchRow].
+ */
 @Composable
-internal fun SettingRow(label: String, value: String? = null, onClick: () -> Unit) {
+internal fun SettingRow(
+    label: String,
+    value: String? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = SIDE_PADDING, vertical = 12.dp),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (enabled) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
         if (value != null) {
             Text(

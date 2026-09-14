@@ -44,6 +44,9 @@ class HomeActivity : ComponentActivity() {
             applicationContext,
             app.searchPrefs,
             app.contactsSource,
+            app.usageSource,
+            app.usagePrefs,
+            app.usageAccess,
         )
     }
 
@@ -113,6 +116,7 @@ class HomeActivity : ComponentActivity() {
                     calendarSource = app.calendarSource,
                     weatherSource = app.weatherSource,
                     mediaSource = app.mediaSource,
+                    usageSource = app.usageSource,
                     widgetLayout = widgetLayout,
                     widgetHost = app.widgetHost,
                     widgetActions = widgetActions,
@@ -153,6 +157,9 @@ class HomeActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.refreshDefaultLauncher()
+        // O acesso ao uso pode ter sido concedido na tela do sistema, e o tempo
+        // de hoje andou enquanto estávamos em outro app.
+        viewModel.refreshUsage()
         customFont = (application as CascataApp).fontStore.customFile()
     }
 }

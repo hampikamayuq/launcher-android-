@@ -12,10 +12,11 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.7.0 — Fases 1 a 6 concluídas)
+## Estado atual (v0.8.0 — Fases 1 a 7 concluídas)
 
 | | |
 |---|---|
+| Uso do aparelho: card "Uso hoje", limites por app e pausa deliberada antes de abrir — sem guardar histórico | ✅ |
 | Busca ampliada: calculadora, atalhos, contatos, configurações do sistema, web por intent, tolerância a 1 erro | ✅ |
 | Widgets acima da lista: pilha com swipe, redimensionar, mover, restauração após backup | ✅ |
 | Notificações na lista: badge por app, expansão inline com ações e resposta direta | ✅ |
@@ -42,7 +43,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| Uso opcional, backup em arquivo, publicação | próximas fases ([plano](docs/plano.md)) |
+| Backup em arquivo e polimento, publicação | próximas fases ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -77,9 +78,13 @@ base: é o custo de um launcher funcional antes de qualquer gordura.
   usuário na tela do sistema; o serviço nem é instanciado antes disso. Nenhum
   título, texto, chave ou horário de notificação é gravado — o DataStore guarda
   apenas as preferências (silenciados, estilo do indicador).
+- **Uso do aparelho sem histórico próprio.** O acesso a estatísticas de uso é
+  concedido na tela do sistema; o Cascata consulta os eventos do dia quando
+  precisa e não grava nada — só os limites por app e os segundos de pausa.
 - **O que é persistido:** favoritos, apps ocultos, apelidos, as preferências de
-  aparência, dos cards e de notificações, e o último clima, em DataStores; mais
-  a fonte importada, se houver. Sem histórico de uso, sem banco.
+  aparência, dos cards, de notificações, de busca e de uso (limites), o layout
+  de widgets e o último clima, em DataStores; mais a fonte importada, se
+  houver. Sem histórico de uso, sem banco.
 - **Regras de backup separadas por canal:** `cloud-backup` e `device-transfer`
   são declarados um a um, em vez de repetir o mesmo bloco nos dois.
 - **Sem framework de injeção.** As dependências são três objetos criados sob
@@ -115,6 +120,7 @@ app/src/main/java/app/cascata/launcher/
 │   ├── glance/                # alarme, bateria, agenda, mídia, weather/
 │   ├── notifications/         # store em memória, texto, agrupamento, prefs
 │   ├── search/                # calculadora (EvalEx), contatos, web, configurações do sistema
+│   ├── usage/                 # acesso, agregação pura dos eventos do dia, limites
 │   └── widgets/               # WidgetLayout (puro), WidgetPrefs, WidgetHostManager
 ├── notifications/             # CascataNotificationListener (bind só do sistema)
 ├── widgets/                   # WidgetPickerActivity, AppWidgetsRestoredReceiver
@@ -125,6 +131,7 @@ app/src/main/java/app/cascata/launcher/
     ├── glance/                # chips do topo
     ├── notifications/         # badge e expansão inline
     ├── search/                # resultados extras da busca
+    ├── usage/                 # folha de uso, pausa, limites
     ├── widgets/               # área de widgets, pilha, folha de edição
     └── theme/                 # CascataTheme, Fonts
 app/src/full/                  # clima Open-Meteo + INTERNET/COARSE_LOCATION

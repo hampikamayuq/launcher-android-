@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 — Fase 7: uso do aparelho, opcional
+
+- Acesso a estatísticas de uso concedido na tela do sistema, só ao ligar.
+- Card "Uso hoje" no at-a-glance: tempo total e app mais usado; a folha lista
+  os dez primeiros e permite definir um limite diário por app.
+- Pausa deliberada: app com o limite do dia atingido abre uma folha de
+  respiração com contagem (3 a 30 s) antes de "Abrir mesmo assim"; vale para
+  a lista, os favoritos, o badge de notificação e a tecla de busca.
+- Nada de histórico gravado: os eventos do dia vêm do sistema a cada consulta
+  (cache de 60 s); só limites, pausa e card vão às preferências.
+- Seção "Uso do aparelho" nas configurações com limites por app.
+- 213 testes de unidade por variante (28 novos: agregação de sessões,
+  virada de meia-noite, limites, duração).
+
 ## 0.7.0 — Fase 6: busca que resolve
 
 - Calculadora na busca (EvalEx, Apache-2.0): "2+2", "15% de 200", "3,5*2",

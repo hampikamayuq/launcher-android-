@@ -49,6 +49,9 @@ import app.cascata.launcher.data.search.SearchSettings
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.ThemeSettings
+import app.cascata.launcher.data.usage.UsageAccess
+import app.cascata.launcher.data.usage.UsagePrefs
+import app.cascata.launcher.data.usage.UsageSettings
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetLayout
 import app.cascata.launcher.data.widgets.WidgetPrefs
@@ -82,12 +85,17 @@ class SettingsActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = WidgetLayout.EMPTY)
             val search by app.searchPrefs.settings
                 .collectAsStateWithLifecycle(initialValue = SearchSettings.DEFAULT)
+            val usage by app.usagePrefs.settings
+                .collectAsStateWithLifecycle(initialValue = UsageSettings.DEFAULT)
 
-            // O acesso a notificações é concedido numa tela do sistema: nada
-            // avisa quando ele muda, então relemos ao voltar para cá.
+            // Notificações e uso do aparelho são acessos especiais, concedidos
+            // em telas do sistema: nada avisa quando mudam, então relemos os
+            // dois ao voltar para cá.
             var listenerAccess by remember { mutableStateOf(false) }
+            var usageAccess by remember { mutableStateOf(false) }
             LifecycleResumeEffect(Unit) {
                 listenerAccess = app.notificationAccess.hasListenerAccess()
+                usageAccess = app.usageAccess.hasAccess()
                 onPauseOrDispose { }
             }
 
@@ -113,7 +121,9 @@ class SettingsActivity : ComponentActivity() {
                     notifications = notifications,
                     widgets = widgets,
                     search = search,
+                    usage = usage,
                     hasListenerAccess = listenerAccess,
+                    hasUsageAccess = usageAccess,
                     customFont = customFont,
                     themePrefs = app.themePrefs,
                     glancePrefs = app.glancePrefs,
@@ -126,6 +136,8 @@ class SettingsActivity : ComponentActivity() {
                     widgetPrefs = app.widgetPrefs,
                     searchPrefs = app.searchPrefs,
                     contactsSource = app.contactsSource,
+                    usagePrefs = app.usagePrefs,
+                    usageAccess = app.usageAccess,
                     appRepository = app.appRepository,
                     fontStore = app.fontStore,
                     iconPacks = app.iconPacks,
@@ -148,7 +160,9 @@ private fun SettingsScreen(
     notifications: NotificationSettings,
     widgets: WidgetLayout,
     search: SearchSettings,
+    usage: UsageSettings,
     hasListenerAccess: Boolean,
+    hasUsageAccess: Boolean,
     customFont: File?,
     themePrefs: ThemePrefs,
     glancePrefs: GlancePrefs,
@@ -161,6 +175,8 @@ private fun SettingsScreen(
     widgetPrefs: WidgetPrefs,
     searchPrefs: SearchPrefs,
     contactsSource: ContactsSource,
+    usagePrefs: UsagePrefs,
+    usageAccess: UsageAccess,
     appRepository: AppRepository,
     fontStore: FontStore,
     iconPacks: IconPackRepository,
@@ -223,6 +239,13 @@ private fun SettingsScreen(
                 search = search,
                 prefs = searchPrefs,
                 contactsSource = contactsSource,
+            )
+            UsageSection(
+                settings = usage,
+                prefs = usagePrefs,
+                access = usageAccess,
+                hasAccess = hasUsageAccess,
+                repository = appRepository,
             )
             FontSection(
                 settings = settings,

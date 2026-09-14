@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cascata.launcher.R
+import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.glance.AlarmSource
 import app.cascata.launcher.data.glance.BatterySource
 import app.cascata.launcher.data.glance.CalendarEvent
@@ -55,6 +56,8 @@ import app.cascata.launcher.data.glance.CalendarSource
 import app.cascata.launcher.data.glance.GlanceSettings
 import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
+import app.cascata.launcher.data.usage.AppUsage
+import app.cascata.launcher.data.usage.UsageSource
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -88,12 +91,20 @@ fun GlanceRow(
     mediaSource: MediaSource,
     /** Card de mídia ligado *e* serviço de notificações conectado — sem o acesso não há sessão. */
     showMedia: Boolean,
+    /** Card "Uso hoje" ligado. A lista chega vazia sem o acesso do sistema. */
+    showUsage: Boolean,
+    usageSource: UsageSource,
+    usageToday: List<AppUsage>,
+    /** Pacote -> app, para o chip nomear o mais usado sem ir ao PackageManager. */
+    usageApps: Map<String, AppEntry>,
+    onUsageClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // O clima depende da edição: no `lite` a fonte existe, mas não sabe buscar.
     val showWeather = settings.showWeather && weatherSource.available
+    val usage = if (showUsage) usageToday else emptyList()
     if (!settings.showAlarm && !settings.showBattery && !settings.showCalendar &&
-        !showWeather && !showMedia
+        !showWeather && !showMedia && usage.isEmpty()
     ) {
         return
     }
@@ -108,6 +119,14 @@ fun GlanceRow(
         if (settings.showCalendar) CalendarChip(calendarSource)
         if (showWeather) WeatherChip(weatherSource, settings.temperatureUnit)
         if (showMedia) MediaChip(mediaSource)
+        if (usage.isNotEmpty()) {
+            UsageChip(
+                source = usageSource,
+                usage = usage,
+                apps = usageApps,
+                onClick = onUsageClick,
+            )
+        }
     }
 }
 

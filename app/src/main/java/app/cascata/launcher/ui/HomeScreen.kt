@@ -60,6 +60,7 @@ import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.notifications.BadgeStyle
 import app.cascata.launcher.data.theme.ClockStyle
+import app.cascata.launcher.data.usage.UsageSource
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetLayout
 import app.cascata.launcher.ui.clock.ClockHeader
@@ -72,6 +73,8 @@ import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
 import app.cascata.launcher.ui.theme.LocalLauncherDensity
 import app.cascata.launcher.ui.theme.iconSize
 import app.cascata.launcher.ui.theme.rowPadding
+import app.cascata.launcher.ui.usage.PauseSheet
+import app.cascata.launcher.ui.usage.UsageSheet
 import app.cascata.launcher.ui.widgets.WidgetActions
 import app.cascata.launcher.ui.widgets.WidgetArea
 import kotlinx.coroutines.launch
@@ -94,6 +97,7 @@ fun HomeScreen(
     calendarSource: CalendarSource,
     weatherSource: WeatherSource,
     mediaSource: MediaSource,
+    usageSource: UsageSource,
     widgetLayout: WidgetLayout,
     widgetHost: WidgetHostManager,
     widgetActions: WidgetActions,
@@ -107,6 +111,11 @@ fun HomeScreen(
     val notificationsConnected by viewModel.notificationsConnected.collectAsStateWithLifecycle()
     // O que a busca acha além dos apps. Tudo vazio com a query em branco.
     val extras by viewModel.searchExtras.collectAsStateWithLifecycle()
+    // Uso do aparelho: a lista já chega vazia com o recurso desligado ou sem o
+    // acesso do sistema, e o prompt só existe quando um limite estourou.
+    val usageSettings by viewModel.usageSettings.collectAsStateWithLifecycle()
+    val usageToday by viewModel.usageToday.collectAsStateWithLifecycle()
+    val pausePrompt by viewModel.pausePrompt.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -124,6 +133,17 @@ fun HomeScreen(
 
     var contextApp by remember { mutableStateOf<AppEntry?>(null) }
     var showHidden by remember { mutableStateOf(false) }
+    var showUsage by remember { mutableStateOf(false) }
+
+    // Pacote -> app, para o card e a folha de uso nomearem o que o sistema
+    // devolve por pacote. Só é refeito fora da busca: durante ela as linhas são
+    // o resultado, e o último mapa inteiro continua valendo.
+    var usageApps by remember { mutableStateOf(emptyMap<String, AppEntry>()) }
+    LaunchedEffect(state.rows, state.hiddenApps, state.query) {
+        if (state.query.isNotEmpty()) return@LaunchedEffect
+        usageApps = (state.rows.mapNotNull { (it as? UiRow.App)?.entry } + state.hiddenApps)
+            .associateBy { it.component.packageName }
+    }
 
     // Um app expandido por vez. `expanded` é o que o usuário pediu; `mounted` é
     // o que ainda ocupa um item da lista — só sai quando a animação de recolher
@@ -174,6 +194,11 @@ fun HomeScreen(
                 weatherSource = weatherSource,
                 mediaSource = mediaSource,
                 showMedia = notificationSettings.showMedia && notificationsConnected,
+                showUsage = usageSettings.enabled && usageSettings.showCard,
+                usageSource = usageSource,
+                usageToday = usageToday,
+                usageApps = usageApps,
+                onUsageClick = { showUsage = true },
             )
 
             OutlinedTextField(
@@ -190,7 +215,7 @@ fun HomeScreen(
                         val app = state.rows.firstNotNullOfOrNull { (it as? UiRow.App)?.entry }
                         val shortcut = extras.shortcuts.firstOrNull()
                         when {
-                            app != null -> repository.launch(app)
+                            app != null -> viewModel.onLaunchRequested(app)
                             shortcut != null -> viewModel.onOpenShortcut(shortcut)
                             extras.web != null -> viewModel.onWebSearch()
                             // Nada para abrir: a query fica onde está.
@@ -220,6 +245,7 @@ fun HomeScreen(
                 FavoritesRow(
                     favorites = state.favorites,
                     repository = repository,
+                    onLaunch = viewModel::onLaunchRequested,
                     onMoveFavorite = viewModel::onMoveFavorite,
                 )
             }
@@ -312,13 +338,14 @@ fun HomeScreen(
                                 entry = row.entry,
                                 favorite = row.favorite,
                                 repository = repository,
+                                onLaunch = { viewModel.onLaunchRequested(row.entry) },
                                 notificationCount = notifications[row.entry.appKey]?.size ?: 0,
                                 badgeStyle = notificationSettings.badgeStyle,
                                 onBadgeClick = {
                                     // Sem expansão inline o indicador é só mais
                                     // um lugar por onde abrir o app.
                                     if (!notificationSettings.expandInline) {
-                                        repository.launch(row.entry)
+                                        viewModel.onLaunchRequested(row.entry)
                                     } else if (expandedAppKey == row.entry.appKey) {
                                         expandedAppKey = null
                                     } else {
@@ -417,6 +444,28 @@ fun HomeScreen(
             onDismiss = { showHidden = false },
         )
     }
+
+    if (showUsage) {
+        UsageSheet(
+            usage = usageToday,
+            apps = usageApps,
+            limits = usageSettings.limitsMinutes,
+            repository = repository,
+            onSetLimit = viewModel::onSetLimit,
+            onDismiss = { showUsage = false },
+        )
+    }
+
+    // A folha de pausa é o caminho de um app que estourou o limite: ela some
+    // sozinha quando o ViewModel limpa o pedido, em qualquer das duas saídas.
+    pausePrompt?.let { prompt ->
+        PauseSheet(
+            prompt = prompt,
+            repository = repository,
+            onConfirm = viewModel::onPauseConfirmed,
+            onDismiss = viewModel::onPauseDismissed,
+        )
+    }
 }
 
 @Composable
@@ -435,6 +484,8 @@ private fun AppRow(
     entry: AppEntry,
     favorite: Boolean,
     repository: AppRepository,
+    /** Nunca `repository.launch` direto: o gate da pausa está no ViewModel. */
+    onLaunch: () -> Unit,
     notificationCount: Int,
     badgeStyle: BadgeStyle,
     onBadgeClick: () -> Unit,
@@ -446,7 +497,7 @@ private fun AppRow(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { repository.launch(entry) },
+                onClick = onLaunch,
                 onLongClick = onLongPress,
             )
             .padding(vertical = density.rowPadding),

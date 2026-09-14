@@ -66,6 +66,8 @@ private class FavoritesDrag {
 fun FavoritesRow(
     favorites: List<AppEntry>,
     repository: AppRepository,
+    /** Abrir passa pelo ViewModel: é lá que mora o gate da pausa por limite. */
+    onLaunch: (AppEntry) -> Unit,
     onMoveFavorite: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,7 +107,7 @@ fun FavoritesRow(
                             }
                         }
                         .combinedClickable(
-                            onClick = { repository.launch(entry) },
+                            onClick = { onLaunch(entry) },
                             // O arraste é de outro detector; aqui só evitamos que
                             // o toque longo termine virando um toque simples.
                             onLongClick = {},

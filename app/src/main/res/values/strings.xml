@@ -224,6 +224,62 @@
     <string name="search_contacts_denied">Permissão de contatos negada. Ative nas configurações do sistema.</string>
     <string name="search_footer">A busca na web abre o seu navegador. O Cascata não faz nenhuma requisição por conta própria.</string>
 
+    <!--
+      Fase 7: uso do aparelho. O título da seção e o rótulo do interruptor
+      principal são o mesmo texto — a seção é aquele interruptor e o que ele liga.
+    -->
+    <string name="section_usage">Uso do aparelho</string>
+    <string name="usage_access_granted">Acesso concedido</string>
+    <string name="usage_access_missing">Toque para conceder o acesso nas configurações do sistema</string>
+    <string name="usage_access_open">Abrir</string>
+    <string name="usage_show_card">Card Uso hoje</string>
+    <string name="usage_pause">Pausa antes de abrir</string>
+    <!-- Segundos no slider da pausa: "5 s" não flexiona em português. -->
+    <string name="usage_pause_seconds" tools:ignore="PluralsCandidate">%1$d s</string>
+    <string name="usage_limits">Limites por app</string>
+    <string name="usage_limits_none">Nenhum</string>
+    <plurals name="usage_limits_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <string name="usage_footer">Os dados vêm do sistema; o Cascata não guarda seu histórico de uso.</string>
+
+    <string name="usage_today">Uso hoje</string>
+    <!-- Abreviações do card e da folha: "min" e "h" não flexionam com a quantidade. -->
+    <string name="usage_minutes" tools:ignore="PluralsCandidate">%1$d min</string>
+    <string name="usage_hours" tools:ignore="PluralsCandidate">%1$d h</string>
+    <string name="usage_hours_minutes">%1$d h %2$d min</string>
+    <!-- Só leitores de tela leem as três abaixo: por extenso, o tempo é falado. -->
+    <plurals name="usage_spoken_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+    <plurals name="usage_spoken_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+    <string name="usage_spoken_hours_minutes">%1$s e %2$s</string>
+    <string name="usage_chip_description">Uso hoje: %1$s, mais usado: %2$s</string>
+
+    <string name="usage_limit_value">Limite: %1$d min</string>
+    <string name="usage_limit_none">Sem limite</string>
+    <string name="usage_limit_field">Minutos por dia</string>
+    <string name="usage_limit_remove">Remover limite</string>
+
+    <plurals name="usage_pause_used">
+        <item quantity="one">Você já usou %1$d minuto hoje.</item>
+        <item quantity="other">Você já usou %1$d minutos hoje.</item>
+    </plurals>
+    <plurals name="usage_pause_limit">
+        <item quantity="one">O limite é %1$d minuto.</item>
+        <item quantity="other">O limite é %1$d minutos.</item>
+    </plurals>
+    <plurals name="usage_pause_countdown">
+        <item quantity="one">%1$d segundo</item>
+        <item quantity="other">%1$d segundos</item>
+    </plurals>
+    <string name="usage_pause_open">Abrir mesmo assim</string>
+
     <string name="section_font">Fonte</string>
     <string name="font_system">Do sistema</string>
     <string name="font_custom">Personalizada…</string>
