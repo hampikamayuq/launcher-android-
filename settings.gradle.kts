@@ -22,3 +22,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Cascata"
 include(":app")
+// Módulo de teste (com.android.test): gera o Baseline Profile e roda os
+// Macrobenchmarks contra o :app. Não entra em nenhum APK publicado.
+include(":baselineprofile")

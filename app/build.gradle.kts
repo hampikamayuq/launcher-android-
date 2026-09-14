@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -93,6 +94,34 @@ android {
     }
 }
 
+/**
+ * Baseline Profile: lista de métodos/classes que o ART compila em AOT logo na
+ * instalação, em vez de esperar o JIT aquecer. Quem produz essa lista é o
+ * módulo :baselineprofile (Macrobenchmark), não o gerador padrão do AndroidX.
+ */
+baselineProfile {
+    /**
+     * Gerar exige emulador — não pode acontecer dentro de um `assembleRelease`
+     * comum, senão o CI de release passaria a depender de KVM. A geração é um
+     * passo explícito e agendado (.github/workflows/baseline.yml).
+     */
+    automaticGenerationDuringBuild = false
+
+    /**
+     * O perfil gerado é escrito em `app/src/<variante>/generated/baselineProfiles/`
+     * e COMMITADO no repositório. É o que faz uma build de release normal —
+     * inclusive a de quem só clonou o projeto — já sair com o perfil embutido.
+     */
+    saveInSrc = true
+
+    /**
+     * Deixa o R8 reordenar o dex usando o startup profile: as classes do
+     * caminho de abertura ficam juntas, o que reduz page faults no cold start.
+     * Depende de `isMinifyEnabled = true`, que a release já tem.
+     */
+    dexLayoutOptimization = true
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -111,5 +140,12 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.ui.tooling.preview)
 
+    // Aplica o Baseline Profile empacotado já na primeira execução, sem
+    // depender do Play Store entregar um perfil na nuvem.
+    implementation(libs.androidx.profileinstaller)
+
     testImplementation(libs.junit)
+
+    // Consome o perfil produzido pelo módulo de Macrobenchmark.
+    baselineProfile(project(":baselineprofile"))
 }

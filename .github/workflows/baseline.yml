@@ -1,0 +1,125 @@
+# Geração do Baseline Profile.
+#
+# Fica fora do CI de push porque precisa de um emulador com KVM: é caro, é lento
+# e o resultado muda pouco. Roda uma vez por mês e sob demanda; o produto é um
+# PR com os perfis atualizados, que alguém revisa e mescla.
+name: Baseline Profile
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Todo dia 1º às 04:00 UTC.
+    - cron: "0 4 1 * *"
+
+concurrency:
+  group: baseline-profile
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Sem KVM o emulador roda em emulação pura de CPU e o job estoura o
+      # timeout. O runner ubuntu-latest tem o device, mas não a permissão.
+      - name: Habilitar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      # A imagem do emulador (aosp-atd API 34) é baixada pelo próprio Gradle na
+      # task pixel6Api34Setup, encadeada pelas tasks de geração. Cachear separado
+      # evita rebaixar ~1 GB a cada execução.
+      - name: Cache das imagens de sistema do emulador
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd
+            ~/.android/gradle/avd
+            ${{ env.ANDROID_HOME }}/system-images
+          key: gmd-pixel6-api34-aosp-atd-v1
+
+      # Uma task por edição: o perfil de `lite` e o de `full` são arquivos
+      # distintos porque as variantes compilam código distinto (o card de clima
+      # só existe na `full`).
+      #
+      # swiftshader_indirect: o runner não tem GPU; sem isto o emulador sobe sem
+      # superfície de render e a gravação do perfil sai vazia.
+      - name: Gerar os Baseline Profiles
+        run: |
+          ./gradlew --no-daemon \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
+            :app:generateLiteReleaseBaselineProfile \
+            :app:generateFullReleaseBaselineProfile
+
+      - name: Verificar se algum perfil mudou
+        id: diff
+        run: |
+          git add -A "app/src"
+          if git diff --cached --quiet -- "app/src"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nenhuma mudança nos perfis — nada a propor."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --cached --stat -- "app/src"
+          fi
+          git reset
+
+      - name: Abrir PR com os perfis atualizados
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/baseline-profile
+          delete-branch: true
+          add-paths: |
+            app/src/**/generated/baselineProfiles/**
+          commit-message: "chore: atualiza Baseline Profiles"
+          title: "chore: atualiza Baseline Profiles"
+          body: |
+            Perfis regerados pelo workflow **Baseline Profile**
+            (`.github/workflows/baseline.yml`) no emulador gerenciado
+            `pixel6Api34` (Pixel 6, API 34, `aosp-atd`).
+
+            O percurso gravado é o de `BaselineProfileGenerator`: abrir a
+            HomeActivity e rolar a gaveta de apps para baixo e de volta.
+
+            Antes de mesclar, vale conferir o `StartupBenchmark` num aparelho
+            real — o CI não roda benchmark (veja `docs/performance.md`).
+
+      # Útil quando a geração falha: os logs do emulador e os resultados brutos
+      # do Macrobenchmark dizem se foi timeout, GPU ou o intent errado.
+      - name: Guardar saídas de diagnóstico
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-profile-outputs
+          path: |
+            app/build/outputs/androidTest-results/**
+            baselineprofile/build/outputs/**
+            app/src/**/generated/baselineProfiles/**
+          if-no-files-found: warn
