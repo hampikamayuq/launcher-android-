@@ -12,10 +12,13 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.8.0 — Fases 1 a 7 concluídas)
+## Estado atual (v0.9.0 — Fases 1 a 8 concluídas)
 
 | | |
 |---|---|
+| Backup em arquivo (`.cascata-backup`) com restauração entre aparelhos e "apagar tudo" | ✅ |
+| Onboarding de três telas; pt-BR, en e es; acessibilidade revisada para TalkBack | ✅ |
+| Baseline Profile por Macrobenchmark (módulo e job de CI) | ✅ |
 | Uso do aparelho: card "Uso hoje", limites por app e pausa deliberada antes de abrir — sem guardar histórico | ✅ |
 | Busca ampliada: calculadora, atalhos, contatos, configurações do sistema, web por intent, tolerância a 1 erro | ✅ |
 | Widgets acima da lista: pilha com swipe, redimensionar, mover, restauração após backup | ✅ |
@@ -43,7 +46,7 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 | Atualização automática ao instalar/remover apps | ✅ |
 | Material You quando disponível | ✅ |
 | CI com testes, lint e release assinado por tag | ✅ |
-| Backup em arquivo e polimento, publicação | próximas fases ([plano](docs/plano.md)) |
+| Publicação (v1.0) | próxima fase ([plano](docs/plano.md)) |
 
 ## Tamanho
 
@@ -121,6 +124,8 @@ app/src/main/java/app/cascata/launcher/
 │   ├── notifications/         # store em memória, texto, agrupamento, prefs
 │   ├── search/                # calculadora (EvalEx), contatos, web, configurações do sistema
 │   ├── usage/                 # acesso, agregação pura dos eventos do dia, limites
+│   ├── backup/                # .cascata-backup versionado, BackupManager
+│   └── onboarding/            # flag de primeiro uso
 │   └── widgets/               # WidgetLayout (puro), WidgetPrefs, WidgetHostManager
 ├── notifications/             # CascataNotificationListener (bind só do sistema)
 ├── widgets/                   # WidgetPickerActivity, AppWidgetsRestoredReceiver
@@ -132,8 +137,10 @@ app/src/main/java/app/cascata/launcher/
     ├── notifications/         # badge e expansão inline
     ├── search/                # resultados extras da busca
     ├── usage/                 # folha de uso, pausa, limites
+    ├── onboarding/            # três páginas do primeiro uso
     ├── widgets/               # área de widgets, pilha, folha de edição
     └── theme/                 # CascataTheme, Fonts
 app/src/full/                  # clima Open-Meteo + INTERNET/COARSE_LOCATION
 app/src/lite/                  # stub de clima; edição sem rede
+baselineprofile/               # gerador de Baseline Profile e Macrobenchmarks
 ```

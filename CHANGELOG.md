@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.9.0 — Fase 8: backup, restore e polimento
+
+- Backup em arquivo `.cascata-backup` (JSON versionado com todas as
+  preferências e o layout de widgets); importar remapeia os perfis do
+  aparelho novo e permite deixar os widgets de fora; "Apagar tudo" com
+  confirmação. Sem histórico de uso nem notificações no arquivo.
+- Onboarding de três telas no primeiro uso: tela inicial padrão, densidade,
+  índice lateral.
+- Inglês e espanhol completos (227 strings, 9 plurais), com `locale-config`
+  para o seletor de idioma por app do Android 13+.
+- Acessibilidade revisada: cabeçalhos, papéis, linhas mescladas, estados de
+  seleção, interruptores alternáveis pela linha inteira, hora do relógio
+  analógico em texto, regiões vivas.
+- Baseline Profile: módulo `:baselineprofile` com gerador e Macrobenchmarks de
+  cold start e rolagem; workflow manual/mensal que gera os perfis num
+  emulador gerenciado e abre PR. `docs/performance.md`.
+- 228 testes de unidade por variante (15 novos).
+
 ## 0.8.0 — Fase 7: uso do aparelho, opcional
 
 - Acesso a estatísticas de uso concedido na tela do sistema, só ao ligar.
