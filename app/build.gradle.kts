@@ -14,8 +14,11 @@ android {
         applicationId = "app.cascata.launcher"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.9.0"
+        versionName = "1.0.0"
+        // versionCode base; cada edição recebe o seu abaixo (base*10 + edição),
+        // porque F-Droid e Play identificam builds por (pacote, versionCode) e as
+        // duas edições compartilham o pacote.
+        versionCode = 10
     }
 
     /**
@@ -30,10 +33,12 @@ android {
         create("lite") {
             dimension = "network"
             isDefault = true
+            versionCode = defaultConfig.versionCode!! * 10 + 1
             buildConfigField("boolean", "HAS_NETWORK", "false")
         }
         create("full") {
             dimension = "network"
+            versionCode = defaultConfig.versionCode!! * 10 + 2
             buildConfigField("boolean", "HAS_NETWORK", "true")
         }
     }

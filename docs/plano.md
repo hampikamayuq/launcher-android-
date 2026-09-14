@@ -218,3 +218,40 @@ código. Antes disso é pacote.
 5. Esconder e renomear apps.
 6. Reordenar favoritos.
 7. Tag `v0.2.0`, APK no GitHub Release.
+
+## 8. Estado em 1.0
+
+| Fase | Versão | Entregue / diferenças |
+|---|---|---|
+| 1 — Virar launcher de verdade | v0.2.0 | Entregue como planejado. Diferença: as tags de atalho de app (`LauncherApps.getShortcuts`) são as que o próprio app de cada pacote publica — o Cascata não define nenhuma própria, só lê e mostra. |
+| 2 — Aparência e identidade | v0.3.0 | Entregue como planejado. |
+| 3 — At a glance | v0.4.0 | Entregue como planejado (clima só na edição `full`). |
+| 4 — Notificações na lista | v0.5.0 | Entregue como planejado. |
+| 5 — Widgets | v0.6.0 | Entregue como planejado. |
+| 6 — Busca que resolve | v0.7.0 | Entregue como planejado. |
+| 7 — Uso do aparelho, opcional | v0.8.0 | Entregue **sem Room**: a ideia original citava um banco Room local; a implementação final não persiste histórico nenhum — os eventos do dia vêm do `UsageStatsManager` a cada consulta (cache de 60 s em memória), e só limites e duração da pausa vão ao DataStore. Zero uso persistido é uma garantia mais forte do que "Room fora do cloud-backup", então a mudança ficou. |
+| 8 — Backup, restore e polimento | v0.9.0 | Entregue como planejado, com uma diferença de método: a acessibilidade foi revisada estaticamente (cabeçalhos, papéis, estados, regiões vivas conferidos no código e por inspeção), não com testes automatizados de TalkBack rodando no CI — não existe suíte de acessibilidade instrumentada no repositório. O Baseline Profile é gerado por CI agendado (`baseline.yml`), commitado como o plano previa, não gerado a cada build. |
+| 9 — Publicar | v1.0.0 | Material desta fase: política de privacidade, metadata de loja (`fastlane/`), checklist das três vias (`docs/publicacao.md`). Diferença do plano original: as tags do perfil privado (Fase 1) dependem inteiramente do perfil existir e estar desbloqueado no aparelho de quem usa — não há dado de perfil publicado pelo Cascata, só o que o próprio Android já expõe. |
+
+### Fora da 1.0
+
+Ideias descartadas ou adiadas ao longo do plano, para não ficarem perdidas em
+commits antigos:
+
+- **Bloqueio de tela por acessibilidade.** Como já dizia a seção 3 (Mapa),
+  exige um serviço de acessibilidade — escopo maior do que o resto do app
+  pede, e só entraria sob demanda explícita.
+- **Anycons** (ícones gerados automaticamente). É o asset mais autoral do
+  Niagara; não se reimplementa "inspirado", como já registrado em
+  [`docs/inspiracao-e-licencas.md`](inspiracao-e-licencas.md).
+- **Sugestões de busca online.** Contrariaria a regra 3 ("sem rede própria")
+  para a edição `lite` e adicionaria uma chamada de rede fora do card de
+  clima na `full` — nenhuma das duas edições ganha com isso.
+- **Badge de perfil de trabalho em ícones de pacote.** O ícone do perfil de
+  trabalho (Fase 1) já é mostrado; o selo sobre o ícone de *pacotes de ícones*
+  customizados especificamente não chegou a ser implementado.
+- **Arrastar para redimensionar widgets.** A Fase 5 entregou redimensionar
+  pelo botão de edição (−/+ dentro dos limites do provedor); o gesto de
+  arrastar a borda do widget ficou de fora.
+- **Animação de saída das folhas** (*bottom sheets*). As folhas (menu de
+  contexto, edição de widget, uso) abrem com animação; fechar é instantâneo.

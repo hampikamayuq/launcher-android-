@@ -1,0 +1,6 @@
+1.0.0 — Publicación: cierra las nueve fases del plan (launcher completo,
+apariencia, tarjetas de un vistazo, notificaciones en la lista, widgets en
+pila, búsqueda con calculadora y contactos, uso del dispositivo opcional,
+copia de seguridad con restauración). Lo nuevo es salir del repositorio:
+política de privacidad, ficha para tiendas y release firmado. Sigue sin
+cuentas, analítica ni recopilación de datos.

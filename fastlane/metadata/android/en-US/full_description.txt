@@ -1,0 +1,49 @@
+Cascata is a minimalist Android launcher: instead of a grid of icons, a
+vertical alphabetical list of every app, with a letter index on the side to
+jump from A to Z without scrolling. Favorites stay pinned at the top in
+their own order, and search ignores accents and tolerates one typo.
+
+At the top of the screen, independent cards show what matters at a glance:
+a clock in four styles (including analog), next alarm, battery, next
+calendar event, and, in the full edition, the weather. Each card is turned
+on separately in settings and only ever asks for the permission its own
+feature needs — nothing is on by default.
+
+Notifications show up right inside the list: an indicator on the app that
+notified you, and tapping it expands the title, text, actions, and direct
+reply without leaving the home screen. None of it is stored — it only
+exists while the notification sits in the system tray.
+
+Widgets live in an area above the list, stacked with a horizontal swipe
+when more than one shares the same spot; each widget can be resized and
+moved.
+
+Search goes beyond app names: a built-in calculator, app shortcuts,
+contacts, system settings screens, and web search with the engine of your
+choice — all through one field, with the keyboard's search key opening the
+top result.
+
+An optional device-usage section shows time spent per app and lets you set
+daily limits, with a deliberate pause screen before opening an app that
+already hit its limit — no usage history is ever stored anywhere.
+
+Everything is customizable: dark mode, colors (Material You, extracted from
+the wallpaper, or a manual accent), list density, text size, fonts (built
+in or your own file), and icon packs in the open format. Themes export and
+import as a single file.
+
+Backup and restore live in a plain file you choose yourself through the
+system's file picker — no account, no cloud of the app's own.
+
+There are two editions sharing the same installer: lite compiles without
+the internet permission and has no weather card; full adds only that
+permission plus coarse location, no API key required. Install one or the
+other — never both at once.
+
+Privacy in one sentence: Cascata does not collect or send data to any
+server run by its authors; the one exception is the weather lookup in the
+full edition, made directly to the public provider, with no identifier
+attached.
+
+Open source under the MIT license, with no ads, no account, and no
+analytics.

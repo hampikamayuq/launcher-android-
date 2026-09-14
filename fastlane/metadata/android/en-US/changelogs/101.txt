@@ -1,0 +1,6 @@
+1.0.0 — Publishing: closes all nine phases of the plan (a full launcher,
+appearance, at-a-glance cards, in-list notifications, stacked widgets,
+search with calculator and contacts, optional device usage, backup with
+restore). What's new is leaving the repository behind: a privacy policy,
+store listings, and a signed release. Still no accounts, analytics, or
+data collection.

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.0 — Fase 9: publicação
+
+- Nove fases do plano fechadas; código, documentação e CI prontos para
+  GitHub Releases (`release.yml`), F-Droid (`fastlane/metadata`, receita
+  em `docs/publicacao.md`) e Play Store (checklist).
+- `versionCode` por edição (101 lite, 102 full) para as lojas distinguirem os
+  dois builds do mesmo pacote.
+- Política de privacidade verificável em `docs/privacidade.md`: nenhum dado
+  coletado ou enviado; a única conexão é o clima na edição `full`.
+- Baseline Profile gerado no CI (`baseline.yml`) e commitado quando o
+  gerador muda.
+- Sem mudança funcional em relação à 0.9.0.
+
 ## 0.9.0 — Fase 8: backup, restore e polimento
 
 - Backup em arquivo `.cascata-backup` (JSON versionado com todas as

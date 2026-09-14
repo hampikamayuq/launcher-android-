@@ -1,0 +1,5 @@
+0.9.0 — Backup and polish: a .cascata-backup file with cross-device restore
+and "erase everything"; a three-screen onboarding; complete English and
+Spanish translations; an accessibility pass for TalkBack (headings, roles,
+states, live regions); a Baseline Profile from Macrobenchmark for faster
+startup and scrolling. 228 unit tests per edition.

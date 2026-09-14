@@ -12,7 +12,20 @@ tradução daquele app foi reaproveitada. Ver [inspiração e licenças](docs/in
 
 O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
-## Estado atual (v0.9.0 — Fases 1 a 8 concluídas)
+## Edições e download
+
+- **`lite`** compila sem `INTERNET`; não tem card de clima. **`full`** soma
+  só isso: `INTERNET` + `ACCESS_COARSE_LOCATION`, para o clima. Mesmo
+  `applicationId` nas duas — instala-se uma ou outra, nunca as duas juntas.
+- Onde baixar: [GitHub Releases](https://github.com/hampikamayuq/launcher-android-/releases),
+  dois APKs por tag (`Cascata-vX.Y.Z-lite.apk` e `-full.apk`), cada um com seu
+  `.sha256`. A versão 1.0 sai assim que a tag `v1.0.0` for criada — antes
+  disso, a lista de releases mostra as versões anteriores.
+
+**Privacidade:** o app não coleta nem envia dados — detalhes e como conferir
+em [`docs/privacidade.md`](docs/privacidade.md).
+
+## Estado atual (v1.0.0 — as nove fases concluídas)
 
 | | |
 |---|---|
@@ -50,13 +63,19 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
 
 ## Tamanho
 
-| | Cascata 0.1.0 (release, R8) | Niagara 1.16.28 |
-|---|---|---|
-| APK | **1,29 MB** | 13,4 MB |
-| `classes.dex` | 1,02 MB — 2.704 classes, 14.501 métodos | 5,19 MB — 12.713 classes, 63.093 métodos |
-| `resources.arsc` | 98 KB | 5,20 MB |
-| Entradas no APK | 106 | 1.834 |
-| Permissões | nenhuma | 26 |
+| | Cascata 0.9.0 `lite` (release, R8) | Cascata 0.9.0 `full` (release, R8) | Niagara 1.16.28 |
+|---|---|---|---|
+| APK | **2.162.291 bytes** (≈ 2,06 MB) | **2.186.143 bytes** (≈ 2,08 MB) | 13,4 MB |
+| Permissões | `ACCESS_HIDDEN_PROFILES`, `READ_CALENDAR`, `READ_CONTACTS`, `PACKAGE_USAGE_STATS`, `BIND_APPWIDGET` (sistema) | as mesmas + `INTERNET`, `ACCESS_COARSE_LOCATION` | 26 |
+
+Todas as permissões listadas são pedidas só ao ligar o recurso correspondente,
+exceto as duas marcadas "sistema" — `PACKAGE_USAGE_STATS` e `BIND_APPWIDGET`
+nunca são concedidas a um app comum na instalação, mesmo declaradas; veja
+[`docs/privacidade.md`](docs/privacidade.md) para o que cada uma faz. (O
+detalhamento por `classes.dex`/`resources.arsc`/contagem de entradas, medido
+na v0.1.0 para a comparação inicial com o Niagara, não foi remedido desde
+então — os números de APK acima são os atuais e verificáveis a qualquer
+momento com `ls -l` no arquivo baixado.)
 
 A comparação não é justa em recursos — o Niagara entrega 116 locales, temas e
 vídeos, e este aqui ainda não faz metade do que aquele faz. Serve como linha de

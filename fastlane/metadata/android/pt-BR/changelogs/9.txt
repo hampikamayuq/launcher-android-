@@ -1,0 +1,5 @@
+0.9.0 — Backup e polimento: arquivo .cascata-backup com restauração entre
+aparelhos e "apagar tudo"; onboarding de três telas; inglês e espanhol
+completos; acessibilidade revisada para TalkBack (cabeçalhos, papéis,
+estados, regiões vivas); Baseline Profile por Macrobenchmark para abrir e
+rolar mais rápido. 228 testes de unidade por edição.

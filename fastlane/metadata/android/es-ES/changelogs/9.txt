@@ -1,0 +1,6 @@
+0.9.0 — Copia de seguridad y pulido: archivo .cascata-backup con
+restauración entre dispositivos y "borrar todo"; incorporación de tres
+pantallas; inglés y español completos; accesibilidad revisada para
+TalkBack (encabezados, roles, estados, regiones activas); Baseline Profile
+por Macrobenchmark para abrir y desplazar más rápido. 228 pruebas
+unitarias por edición.

@@ -1,0 +1,48 @@
+Cascata é um launcher minimalista para Android: em vez de uma grade de
+ícones, uma lista alfabética vertical com todos os apps, e um índice de
+letras na lateral para saltar de A a Z sem rolar. Favoritos ficam fixados no
+topo, em ordem própria, e a busca ignora acentos e tolera um erro de
+digitação.
+
+No topo da tela, cards independentes mostram o que importa de relance:
+relógio em quatro estilos (incluindo analógico), próximo alarme, bateria,
+próximo evento da agenda e, na edição completa, o clima. Cada card liga
+sozinho nas configurações e só pede a permissão que a sua função exige —
+nenhum vem ligado de fábrica.
+
+Notificações aparecem embutidas na própria lista: um indicador no app que
+notificou, e tocar expande título, texto, ações e resposta direta sem sair
+da tela inicial. Nada disso é gravado — existe só enquanto a notificação
+está na barra do sistema.
+
+Widgets ficam numa área acima da lista, em pilhas com deslize horizontal
+quando há mais de um no mesmo espaço; cada widget pode ser redimensionado e
+movido.
+
+A busca vai além do nome do app: calculadora embutida, atalhos de app,
+contatos, telas de configuração do sistema e busca na web pelo motor de sua
+escolha — tudo por um único campo, com a tecla de busca do teclado abrindo o
+primeiro resultado.
+
+Uma seção opcional de uso do aparelho mostra o tempo gasto em cada app e
+permite definir limites diários, com uma pausa deliberada antes de abrir um
+app que já passou do limite — sem guardar histórico de uso em lugar nenhum.
+
+Tudo é personalizável: modo escuro, cores (Material You, extraídas do papel
+de parede, ou de destaque), densidade da lista, tamanho do texto, fontes
+(embutidas ou seu próprio arquivo) e pacotes de ícones no formato aberto.
+Temas exportam e importam como um único arquivo.
+
+Backup e restauração ficam num arquivo próprio, escolhido por você no
+seletor de arquivos do sistema — sem conta e sem nuvem própria do app.
+
+Existem duas edições com o mesmo instalador: a lite compila sem a permissão
+de internet e não tem o card de clima; a full soma só essa permissão e
+localização aproximada, sem chave de API. Escolha uma das duas — nunca as
+duas juntas.
+
+Privacidade em uma frase: o Cascata não coleta nem envia dados a nenhum
+servidor dos autores; a única exceção é a consulta de clima da edição full,
+direto ao provedor público, sem identificador nenhum.
+
+Código aberto sob licença MIT, sem anúncios, sem conta e sem analytics.

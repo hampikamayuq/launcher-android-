@@ -1,0 +1,50 @@
+Cascata es un launcher minimalista para Android: en vez de una cuadrícula de
+iconos, una lista alfabética vertical con todas las apps, y un índice de
+letras al costado para saltar de la A a la Z sin desplazarse. Los favoritos
+quedan fijados arriba, en un orden propio, y la búsqueda ignora los acentos
+y tolera un error de escritura.
+
+En la parte superior, tarjetas independientes muestran lo importante de un
+vistazo: reloj en cuatro estilos (incluido el analógico), próxima alarma,
+batería, próximo evento del calendario y, en la edición completa, el clima.
+Cada tarjeta se activa por separado en los ajustes y solo pide el permiso
+que su propia función necesita — ninguna viene activada de fábrica.
+
+Las notificaciones aparecen dentro de la propia lista: un indicador en la
+app que notificó, y tocarlo expande título, texto, acciones y respuesta
+directa sin salir de la pantalla de inicio. Nada de esto se guarda — solo
+existe mientras la notificación está en la barra del sistema.
+
+Los widgets viven en un área sobre la lista, en pilas con deslizamiento
+horizontal cuando hay más de uno en el mismo espacio; cada widget se puede
+redimensionar y mover.
+
+La búsqueda va más allá del nombre de la app: calculadora integrada, atajos
+de apps, contactos, pantallas de ajustes del sistema y búsqueda web con el
+motor que elijas — todo desde un único campo, con la tecla de búsqueda del
+teclado abriendo el primer resultado.
+
+Una sección opcional de uso del dispositivo muestra el tiempo dedicado a
+cada app y permite fijar límites diarios, con una pausa deliberada antes de
+abrir una app que ya superó su límite — sin guardar nunca un historial de
+uso.
+
+Todo es personalizable: modo oscuro, colores (Material You, extraídos del
+fondo de pantalla, o de acento manual), densidad de la lista, tamaño del
+texto, fuentes (integradas o tu propio archivo) y paquetes de iconos en el
+formato abierto. Los temas se exportan e importan como un solo archivo.
+
+La copia de seguridad y la restauración quedan en un archivo propio, elegido
+por ti en el selector de archivos del sistema — sin cuenta y sin nube propia
+de la app.
+
+Existen dos ediciones con el mismo instalador: la lite se compila sin el
+permiso de internet y no tiene la tarjeta de clima; la full suma solo ese
+permiso y la ubicación aproximada, sin clave de API. Instala una u otra —
+nunca las dos juntas.
+
+Privacidad en una frase: Cascata no recopila ni envía datos a ningún
+servidor de los autores; la única excepción es la consulta del clima en la
+edición full, directo al proveedor público, sin ningún identificador.
+
+Código abierto bajo licencia MIT, sin anuncios, sin cuenta y sin analítica.
