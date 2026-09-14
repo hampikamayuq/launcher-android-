@@ -162,7 +162,10 @@ num emulador sem GPU, produz números que variam mais do que qualquer regressão
 que a gente fosse detectar. O emulador serve para *gravar* um percurso; não
 serve para cronometrar.
 
-Então benchmark se roda na mão, num aparelho real:
+Então benchmark se roda na mão, num aparelho real. O atalho é
+`scripts/benchmark.sh` (`lite` ou `full`, opcionalmente `Startup` ou `Scroll`):
+roda a task conectada, acha o `benchmarkData.json` e imprime as medianas e
+percentis já confrontados com os orçamentos da §7. As tasks por baixo são:
 
 ```bash
 # Cold start, com e sem perfil
