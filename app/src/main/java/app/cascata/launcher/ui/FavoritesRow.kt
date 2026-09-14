@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import app.cascata.launcher.R
 import app.cascata.launcher.data.AppEntry
-import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 import kotlin.math.roundToInt
 
 private val FAVORITE_ICON = 48.dp
@@ -68,7 +68,7 @@ private class FavoritesDrag {
 @Composable
 fun FavoritesRow(
     favorites: List<AppEntry>,
-    repository: AppRepository,
+    repository: IconSource,
     /** Abrir passa pelo ViewModel: é lá que mora o gate da pausa por limite. */
     onLaunch: (AppEntry) -> Unit,
     onMoveFavorite: (Int, Int) -> Unit,

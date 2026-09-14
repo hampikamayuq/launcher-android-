@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.android.screenshot)
 }
 
 android {
@@ -88,6 +89,12 @@ android {
         }
     }
 
+    /**
+     * Prévias do Compose renderizadas por layoutlib na JVM, sem emulador — é o
+     * que produz os screenshots da loja. Ainda é API experimental do AGP.
+     */
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
+
     buildFeatures {
         compose = true
         // HAS_NETWORK e VERSION_NAME (User-Agent do clima) vêm daqui.
@@ -150,6 +157,12 @@ dependencies {
     implementation(libs.androidx.profileinstaller)
 
     testImplementation(libs.junit)
+
+    // As prévias de screenshot vivem em `app/src/screenshotTest/`: `@PreviewTest`
+    // (o que marca a prévia como caso de teste) vem da validation-api, e o
+    // ui-tooling é o runtime que layoutlib usa para compor fora do aparelho.
+    screenshotTestImplementation(libs.screenshot.validation.api)
+    screenshotTestImplementation(libs.androidx.compose.ui.tooling)
 
     // Consome o perfil produzido pelo módulo de Macrobenchmark.
     baselineProfile(project(":baselineprofile"))

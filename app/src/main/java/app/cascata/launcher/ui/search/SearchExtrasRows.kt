@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.cascata.launcher.R
 import app.cascata.launcher.SearchExtras
-import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.data.ShortcutMatch
 import app.cascata.launcher.data.search.CalculationResult
 import app.cascata.launcher.data.search.Contact
@@ -98,7 +98,7 @@ fun LazyListScope.calculationItem(result: CalculationResult) {
  */
 fun LazyListScope.searchExtraItems(
     extras: SearchExtras,
-    repository: AppRepository,
+    repository: IconSource,
     onOpenShortcut: (ShortcutMatch) -> Unit,
     onOpenContact: (Contact) -> Unit,
     onCallContact: (Contact) -> Unit,
@@ -257,7 +257,7 @@ private fun CalculationCard(result: CalculationResult) {
 }
 
 @Composable
-private fun ShortcutRow(match: ShortcutMatch, repository: AppRepository, onClick: () -> Unit) {
+private fun ShortcutRow(match: ShortcutMatch, repository: IconSource, onClick: () -> Unit) {
     val label = (match.shortcut.shortLabel ?: match.shortcut.longLabel)?.toString().orEmpty()
     val appLabel = match.app?.label
     val description = if (appLabel == null) {

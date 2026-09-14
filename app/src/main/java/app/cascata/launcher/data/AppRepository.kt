@@ -44,6 +44,17 @@ private const val MAX_SHORTCUTS = 6
 data class LoadedIcon(val drawable: Drawable, val fromPack: Boolean)
 
 /**
+ * De onde a UI tira o desenho de um ícone. Quem implementa no app é o
+ * [AppRepository]; os composables que só desenham ícones pedem esta interface, e
+ * não o repositório inteiro — assim eles também compõem fora do aparelho (as
+ * prévias de `src/screenshotTest`, que não têm LauncherApps nem Context real).
+ */
+interface IconSource {
+    suspend fun icon(entry: AppEntry): LoadedIcon?
+    suspend fun shortcutIcon(shortcut: ShortcutInfo): Drawable?
+}
+
+/**
  * Um atalho encontrado na busca, com o app dono dele quando dá para resolvê-lo.
  * O rótulo do app aqui é o do sistema, sem apelido: o índice é do repositório e
  * não enxerga o DataStore de apelidos.
@@ -62,7 +73,7 @@ class AppRepository(
     scope: CoroutineScope,
     private val iconPacks: IconPackRepository,
     private val themePrefs: ThemePrefs,
-) {
+) : IconSource {
 
     private val launcherApps = context.getSystemService(LauncherApps::class.java)
     private val userManager = context.getSystemService(UserManager::class.java)
@@ -135,7 +146,7 @@ class AppRepository(
      * O ícone do pacote não leva o badge de perfil de trabalho — quem tem o badge
      * é o drawable do sistema —, e é o preço de usar o pacote escolhido.
      */
-    suspend fun icon(entry: AppEntry): LoadedIcon? = withContext(Dispatchers.IO) {
+    override suspend fun icon(entry: AppEntry): LoadedIcon? = withContext(Dispatchers.IO) {
         iconCache[entry.key]?.let { return@withContext it }
         // Uma leitura por ícone: o DataStore mantém o valor em memória depois da
         // primeira, e assim não há corrida entre o cache e a preferência chegando.
@@ -259,7 +270,7 @@ class AppRepository(
     }.getOrNull()
 
     /** Ícone de um atalho, na densidade da tela. Chame fora da main thread. */
-    suspend fun shortcutIcon(shortcut: ShortcutInfo): Drawable? = withContext(Dispatchers.IO) {
+    override suspend fun shortcutIcon(shortcut: ShortcutInfo): Drawable? = withContext(Dispatchers.IO) {
         val cacheKey = "${shortcut.`package`}#${shortcut.id}"
         shortcutIconCache[cacheKey]?.let { return@withContext it }
         val density = context.resources.displayMetrics.densityDpi

@@ -145,6 +145,56 @@ manual, do lado da Google, fora do nosso controle).
   [`docs/privacidade.md`](privacidade.md), que já cobre o que é lido, quando,
   e que nada é gravado.
 
+## d. Screenshots
+
+As seis imagens da ficha, nos três idiomas, estão em
+`fastlane/metadata/android/{pt-BR,en-US,es-ES}/images/phoneScreenshots/1.png … 6.png`
+(1080x2400, 440 dpi — a resolução que F-Droid e Play aceitam para telefone):
+
+| # | Tela | Tema |
+|---|------|------|
+| 1 | Início: relógio, cards do *at a glance*, favoritos e o começo da gaveta | claro |
+| 2 | Gaveta inteira com o índice alfabético | escuro |
+| 3 | Busca: conta, contatos e telas do sistema | claro |
+| 4 | Notificações abertas embaixo da linha do app | escuro |
+| 5 | Uso do dia e limites por app | claro |
+| 6 | Configurações: aparência | escuro |
+
+**Nada de emulador.** As imagens são prévias do Compose
+(`app/src/screenshotTest/java/app/cascata/launcher/preview/`) renderizadas por
+layoutlib na JVM, pelo plugin `com.android.compose.screenshot`. Cada função de
+prévia em `StoreScreenshots.kt` vale uma imagem; o nome dela diz a posição na
+loja e o idioma (`Home1PtBr` é a imagem 1 de pt-BR), e é assim que o script
+sabe para onde copiar.
+
+Regerar depois de mexer na UI:
+
+```bash
+scripts/screenshots.sh          # renderiza e copia para o fastlane
+scripts/screenshots.sh --copy   # só copia o que já está renderizado
+```
+
+O script chama `./gradlew :app:updateLiteDebugScreenshotTest`, que reescreve as
+imagens de referência em `app/src/screenshotTestLiteDebug/reference/` — elas são
+commitadas, e é o diff delas que mostra o que mudou de visual. Confira as
+imagens antes de commitar: o `update` aceita qualquer renderização, inclusive
+uma quebrada.
+
+**Conferir sem regerar** (passo opcional, fora do CI):
+
+```bash
+./gradlew :app:validateLiteDebugScreenshotTest
+```
+
+Compara o que a UI desenha hoje com as imagens de referência e falha na
+diferença, com o diff em `app/build/outputs/screenshotTest-results/`. Não está
+no `.github/workflows/ci.yml` de propósito: o layoutlib baixa ~100 MB na
+primeira execução e a comparação é pixel a pixel, sensível a troca de versão do
+Compose — é uma conferência de quem mexe na UI, não um portão de CI. Duas
+prévias mostram tempo relativo ("3 min", "18 min") calculado a partir do
+relógio da máquina; elas podem divergir por um minuto entre uma renderização e
+outra, e é o caso em que regerar é a resposta certa.
+
 ## Nota sobre `versionCode` por edição
 
 Desde a 1.0.0 cada edição tem o seu `versionCode`: `base * 10 + 1` para a

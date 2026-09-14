@@ -60,10 +60,6 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
     // Observável: trocar o idioma do sistema refaz os formatos sem reiniciar o app.
     val locale = LocalLocale.current.platformLocale
     val is24h = remember(locale) { android.text.format.DateFormat.is24HourFormat(context) }
-    val timeFormat = remember(locale, is24h) {
-        SimpleDateFormat(if (is24h) "HH:mm" else "h:mm a", locale)
-    }
-    val dateFormat = remember(locale) { SimpleDateFormat("EEEE, d 'de' MMMM", locale) }
 
     var now by remember { mutableStateOf(Date()) }
     LaunchedEffect(Unit) {
@@ -74,8 +70,6 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
         }
     }
 
-    val date = dateFormat.format(now).replaceFirstChar { it.uppercase(locale) }
-
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
@@ -83,34 +77,7 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
                 .clickable(role = Role.Button) { openClock(context) }
                 .padding(vertical = 8.dp)
         ) {
-            when (clockStyle) {
-                ClockStyle.BASIC -> StackedClock(
-                    time = timeFormat.format(now),
-                    date = date,
-                    timeStyle = MaterialTheme.typography.displayMedium,
-                    dateStyle = MaterialTheme.typography.bodyMedium,
-                )
-
-                ClockStyle.BIG -> StackedClock(
-                    time = timeFormat.format(now),
-                    date = date,
-                    timeStyle = MaterialTheme.typography.displayLarge,
-                    dateStyle = MaterialTheme.typography.bodyLarge,
-                )
-
-                ClockStyle.TWO_LINE -> TwoLineClock(
-                    now = now,
-                    date = date,
-                    is24h = is24h,
-                    locale = locale,
-                )
-
-                ClockStyle.ANALOG -> AnalogClockRow(
-                    now = now,
-                    date = date,
-                    time = timeFormat.format(now),
-                )
-            }
+            ClockFace(clockStyle = clockStyle, now = now, is24h = is24h, locale = locale)
         }
 
         // A porta das configurações fica aqui, visível: a alternativa seria um
@@ -122,6 +89,56 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * O desenho do relógio, com o instante vindo de fora. Separado de [ClockHeader]
+ * porque quem chama de fora do aparelho — a prévia de screenshot — precisa de
+ * uma hora fixa: senão a imagem mudaria a cada renderização.
+ */
+@Composable
+internal fun ClockFace(clockStyle: ClockStyle, now: Date, is24h: Boolean, locale: Locale) {
+    val timeFormat = remember(locale, is24h) {
+        SimpleDateFormat(if (is24h) "HH:mm" else "h:mm a", locale)
+    }
+    // O padrão vem do idioma, não de um literal em português: "quinta-feira, 12
+    // de fevereiro", "Thursday, February 12", "jueves, 12 de febrero".
+    val dateFormat = remember(locale) {
+        SimpleDateFormat(
+            android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"),
+            locale,
+        )
+    }
+    val date = dateFormat.format(now).replaceFirstChar { it.uppercase(locale) }
+
+    when (clockStyle) {
+        ClockStyle.BASIC -> StackedClock(
+            time = timeFormat.format(now),
+            date = date,
+            timeStyle = MaterialTheme.typography.displayMedium,
+            dateStyle = MaterialTheme.typography.bodyMedium,
+        )
+
+        ClockStyle.BIG -> StackedClock(
+            time = timeFormat.format(now),
+            date = date,
+            timeStyle = MaterialTheme.typography.displayLarge,
+            dateStyle = MaterialTheme.typography.bodyLarge,
+        )
+
+        ClockStyle.TWO_LINE -> TwoLineClock(
+            now = now,
+            date = date,
+            is24h = is24h,
+            locale = locale,
+        )
+
+        ClockStyle.ANALOG -> AnalogClockRow(
+            now = now,
+            date = date,
+            time = timeFormat.format(now),
+        )
     }
 }
 

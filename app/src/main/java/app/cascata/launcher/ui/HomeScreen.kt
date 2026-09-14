@@ -56,6 +56,7 @@ import app.cascata.launcher.R
 import app.cascata.launcher.Row as UiRow
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.data.glance.AlarmSource
 import app.cascata.launcher.data.glance.BatterySource
 import app.cascata.launcher.data.glance.CalendarSource
@@ -476,8 +477,9 @@ fun HomeScreen(
     }
 }
 
+/** Visível ao source set de prévias (`src/screenshotTest`), que remonta a lista. */
 @Composable
-private fun SectionHeader(letter: Char) {
+internal fun SectionHeader(letter: Char) {
     Text(
         text = letter.toString(),
         style = MaterialTheme.typography.labelLarge,
@@ -490,11 +492,12 @@ private fun SectionHeader(letter: Char) {
     )
 }
 
+/** Idem: a prévia de screenshot desenha as mesmas linhas que a home desenha. */
 @Composable
-private fun AppRow(
+internal fun AppRow(
     entry: AppEntry,
     favorite: Boolean,
-    repository: AppRepository,
+    repository: IconSource,
     /** Nunca `repository.launch` direto: o gate da pausa está no ViewModel. */
     onLaunch: () -> Unit,
     notificationCount: Int,

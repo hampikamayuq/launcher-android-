@@ -95,44 +95,73 @@ fun NotificationInline(
         exit = shrinkVertically(),
         modifier = modifier,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 6.dp)
-                .clip(BLOCK_SHAPE)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = BLOCK_ALPHA))
-                .padding(vertical = 4.dp),
-        ) {
-            // A hora relativa é calculada uma vez por abertura: o bloco vive
-            // segundos, e um relógio por notificação custaria mais que vale.
-            val now = remember(notifications) { System.currentTimeMillis() }
+        NotificationBlock(
+            appLabel = appLabel,
+            notifications = notifications,
+            onOpen = onOpen,
+            onDismiss = onDismiss,
+            onDismissAll = onDismissAll,
+            onFireAction = onFireAction,
+            onReply = onReply,
+            onCollapse = onCollapse,
+        )
+    }
+}
 
-            notifications.forEach { notification ->
-                NotificationItem(
-                    notification = notification,
-                    appLabel = appLabel,
-                    nowMillis = now,
-                    onOpen = {
-                        onOpen(notification)
-                        onCollapse()
-                    },
-                    onDismiss = { onDismiss(notification.key) },
-                    onFireAction = onFireAction,
-                    onReply = { action, text ->
-                        onReply(action, text).also { sent -> if (sent) onCollapse() }
-                    },
-                )
-            }
+/**
+ * O bloco em si, já aberto — sem a animação que o [NotificationInline] põe por
+ * fora. Separado porque a prévia de screenshot renderiza um quadro só: dentro da
+ * [AnimatedVisibility] ela pegaria sempre a altura zero do começo da animação.
+ */
+@Composable
+internal fun NotificationBlock(
+    appLabel: String,
+    notifications: List<AppNotification>,
+    onOpen: (AppNotification) -> Unit,
+    onDismiss: (String) -> Unit,
+    onDismissAll: () -> Unit,
+    onFireAction: (NotificationAction) -> Unit,
+    onReply: (NotificationAction, String) -> Boolean,
+    onCollapse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .clip(BLOCK_SHAPE)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = BLOCK_ALPHA))
+            .padding(vertical = 4.dp),
+    ) {
+        // A hora relativa é calculada uma vez por abertura: o bloco vive
+        // segundos, e um relógio por notificação custaria mais que vale.
+        val now = remember(notifications) { System.currentTimeMillis() }
 
-            // Sem nenhuma dispensável (mídia, downloads, "rodando em segundo
-            // plano"), o botão não teria o que dispensar.
-            if (notifications.any { it.isClearable }) {
-                TextButton(
-                    onClick = onDismissAll,
-                    modifier = Modifier.align(Alignment.End).padding(end = 4.dp),
-                ) {
-                    Text(stringResource(R.string.notification_dismiss_all))
-                }
+        notifications.forEach { notification ->
+            NotificationItem(
+                notification = notification,
+                appLabel = appLabel,
+                nowMillis = now,
+                onOpen = {
+                    onOpen(notification)
+                    onCollapse()
+                },
+                onDismiss = { onDismiss(notification.key) },
+                onFireAction = onFireAction,
+                onReply = { action, text ->
+                    onReply(action, text).also { sent -> if (sent) onCollapse() }
+                },
+            )
+        }
+
+        // Sem nenhuma dispensável (mídia, downloads, "rodando em segundo
+        // plano"), o botão não teria o que dispensar.
+        if (notifications.any { it.isClearable }) {
+            TextButton(
+                onClick = onDismissAll,
+                modifier = Modifier.align(Alignment.End).padding(end = 4.dp),
+            ) {
+                Text(stringResource(R.string.notification_dismiss_all))
             }
         }
     }

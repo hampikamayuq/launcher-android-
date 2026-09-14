@@ -21,12 +21,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.Dp
 import androidx.core.graphics.drawable.toBitmap
 import app.cascata.launcher.data.AppEntry
-import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.data.LoadedIcon
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
@@ -46,14 +48,18 @@ private data class RasterIcon(val image: ImageBitmap, val adaptive: Boolean)
 @Composable
 fun AppIcon(
     entry: AppEntry,
-    repository: AppRepository,
+    repository: IconSource,
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    var raster by remember(entry.key) { mutableStateOf<RasterIcon?>(null) }
     val px = with(LocalDensity.current) { size.roundToPx() }
+    val inspecting = LocalInspectionMode.current
+    var raster by remember(entry.key, px, inspecting) {
+        mutableStateOf(if (inspecting) inspectionRaster(repository, entry, px) else null)
+    }
 
     LaunchedEffect(entry.key, px) {
+        if (inspecting) return@LaunchedEffect
         raster = withContext(Dispatchers.Default) {
             runCatching { rasterize(repository.icon(entry), px) }.getOrNull()
         }
@@ -62,11 +68,21 @@ fun AppIcon(
     IconSurface(raster = raster, size = size, modifier = modifier)
 }
 
+/**
+ * Ícone de uma prévia (layoutlib), onde não há quadro seguinte: a imagem é
+ * capturada logo depois da primeira composição, e o efeito acima não chegaria a
+ * devolver nada — o ícone sairia vazio. Só aqui a rasterização é síncrona, e a
+ * fonte é sempre a fictícia do source set `screenshotTest`; no aparelho este
+ * caminho nunca roda.
+ */
+private fun inspectionRaster(repository: IconSource, entry: AppEntry, px: Int): RasterIcon? =
+    runCatching { runBlocking { rasterize(repository.icon(entry), px) } }.getOrNull()
+
 /** Mesma rasterização do [AppIcon], para os atalhos do menu de contexto. */
 @Composable
 fun ShortcutIcon(
     shortcut: ShortcutInfo,
-    repository: AppRepository,
+    repository: IconSource,
     size: Dp,
     modifier: Modifier = Modifier,
 ) {

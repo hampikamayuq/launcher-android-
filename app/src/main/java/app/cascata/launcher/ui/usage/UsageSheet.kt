@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
 import app.cascata.launcher.data.AppEntry
-import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.data.usage.AppUsage
 import app.cascata.launcher.ui.AppIcon
 
@@ -54,48 +54,20 @@ fun UsageSheet(
     usage: List<AppUsage>,
     apps: Map<String, AppEntry>,
     limits: Map<String, Int>,
-    repository: AppRepository,
+    repository: IconSource,
     onSetLimit: (String, Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var editing by remember { mutableStateOf<String?>(null) }
-    val rows = usage.take(USAGE_ROWS)
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 24.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.usage_today),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .semantics { heading() }
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-            )
-
-            rows.forEach { item ->
-                UsageRow(
-                    item = item,
-                    entry = apps[item.packageName],
-                    limit = limits[item.packageName],
-                    repository = repository,
-                    onClick = { editing = item.packageName },
-                )
-            }
-
-            Text(
-                text = stringResource(R.string.usage_footer),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
-            )
-        }
+        UsageSheetContent(
+            usage = usage,
+            apps = apps,
+            limits = limits,
+            repository = repository,
+            onEdit = { editing = it },
+        )
     }
 
     editing?.let { packageName ->
@@ -111,12 +83,61 @@ fun UsageSheet(
     }
 }
 
+/**
+ * O conteúdo da folha, sem a folha: é o que a prévia de screenshot renderiza —
+ * o [ModalBottomSheet] vive numa janela própria e não cabe numa imagem estática.
+ */
+@Composable
+internal fun UsageSheetContent(
+    usage: List<AppUsage>,
+    apps: Map<String, AppEntry>,
+    limits: Map<String, Int>,
+    repository: IconSource,
+    onEdit: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 24.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.usage_today),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .semantics { heading() }
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+
+        usage.take(USAGE_ROWS).forEach { item ->
+            UsageRow(
+                item = item,
+                entry = apps[item.packageName],
+                limit = limits[item.packageName],
+                repository = repository,
+                onClick = { onEdit(item.packageName) },
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.usage_footer),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+        )
+    }
+}
+
 @Composable
 private fun UsageRow(
     item: AppUsage,
     entry: AppEntry?,
     limit: Int?,
-    repository: AppRepository,
+    repository: IconSource,
     onClick: () -> Unit,
 ) {
     // "1 h 20 min" lido em voz alta vira "um h"; a linha inteira é anunciada

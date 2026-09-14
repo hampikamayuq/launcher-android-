@@ -32,6 +32,7 @@ em [`docs/privacidade.md`](docs/privacidade.md).
 | Backup em arquivo (`.cascata-backup`) com restauração entre aparelhos e "apagar tudo" | ✅ |
 | Onboarding de três telas; pt-BR, en e es; acessibilidade revisada para TalkBack | ✅ |
 | Baseline Profile por Macrobenchmark (módulo e job de CI) | ✅ |
+| Screenshots da ficha (6 telas × 3 idiomas) renderizadas por layoutlib, sem emulador; `scripts/screenshots.sh` e `scripts/benchmark.sh` | ✅ |
 | Uso do aparelho: card "Uso hoje", limites por app e pausa deliberada antes de abrir — sem guardar histórico | ✅ |
 | Busca ampliada: calculadora, atalhos, contatos, configurações do sistema, web por intent, tolerância a 1 erro | ✅ |
 | Widgets acima da lista: pilha com swipe, redimensionar, mover, restauração após backup | ✅ |

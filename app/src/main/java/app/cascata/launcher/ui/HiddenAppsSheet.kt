@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
 import app.cascata.launcher.data.AppEntry
-import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 
 private val HIDDEN_ICON = 36.dp
 
@@ -33,7 +33,7 @@ private val HIDDEN_ICON = 36.dp
 @Composable
 fun HiddenAppsSheet(
     hidden: List<AppEntry>,
-    repository: AppRepository,
+    repository: IconSource,
     onUnhide: (AppEntry) -> Unit,
     onDismiss: () -> Unit,
 ) {

@@ -51,7 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.PausePrompt
 import app.cascata.launcher.R
-import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.ui.AppIcon
 import kotlinx.coroutines.delay
 
@@ -76,7 +76,7 @@ private const val BREATH_MIN_SCALE = 0.7f
 @Composable
 fun PauseSheet(
     prompt: PausePrompt,
-    repository: AppRepository,
+    repository: IconSource,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {

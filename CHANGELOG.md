@@ -13,7 +13,14 @@
   gerador muda. Primeiros perfis versionados (≈ 700 métodos do próprio app
   marcados como hot/startup); a release passa a embutir
   `assets/dexopt/baseline.prof` com eles, ao custo de ≈ 100 KB no APK.
-- Sem mudança funcional em relação à 0.9.0.
+- Screenshots da ficha da loja (6 telas × pt-BR/en-US/es-ES, 1080×2400) em
+  `fastlane/metadata`, renderizadas por layoutlib na JVM a partir de prévias
+  do Compose (`app/src/screenshotTest`), sem emulador; `scripts/screenshots.sh`
+  regenera. `scripts/benchmark.sh` roda os Macrobenchmarks num aparelho e
+  confronta com os orçamentos.
+- Correção: a data do relógio segue o padrão do idioma
+  (`getBestDateTimePattern`); em inglês saía "Thursday, 12 de February".
+- Fora isso, sem mudança funcional em relação à 0.9.0.
 
 ## 0.9.0 — Fase 8: backup, restore e polimento
 
