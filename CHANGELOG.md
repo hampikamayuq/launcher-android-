@@ -10,7 +10,9 @@
 - Política de privacidade verificável em `docs/privacidade.md`: nenhum dado
   coletado ou enviado; a única conexão é o clima na edição `full`.
 - Baseline Profile gerado no CI (`baseline.yml`) e commitado quando o
-  gerador muda.
+  gerador muda. Primeiros perfis versionados (≈ 700 métodos do próprio app
+  marcados como hot/startup); a release passa a embutir
+  `assets/dexopt/baseline.prof` com eles, ao custo de ≈ 100 KB no APK.
 - Sem mudança funcional em relação à 0.9.0.
 
 ## 0.9.0 — Fase 8: backup, restore e polimento

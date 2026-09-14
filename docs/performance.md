@@ -89,6 +89,16 @@ Actions → **Baseline Profile** → *Run workflow*. Também roda sozinho no dia
 de cada mês. O job habilita KVM no runner, sobe o emulador gerenciado
 `pixel6Api34` e, se algum perfil mudou, abre um PR `chore/baseline-profile`.
 
+Há um terceiro gatilho: qualquer push que altere `baselineprofile/**` ou o
+próprio `baseline.yml`. Nesse caso não há PR: os perfis regerados voltam num
+commit `chore: atualiza Baseline Profiles (gerados no CI)` na mesma branch.
+Quem tem a branch em checkout precisa dar `git pull` antes do próximo push.
+
+Os perfis já estão versionados em `app/src/{lite,full}Release/generated/`
+(primeira geração: run #1 do workflow, ~10 min no runner, cerca de 15 mil
+linhas por perfil, ~700 delas de classes do próprio Cascata). A release os
+consome automaticamente; nenhum passo extra no build.
+
 ### Localmente, com emulador gerenciado pelo Gradle
 
 Não precisa de AVD manual: o Gradle baixa e sobe a imagem sozinho. Precisa de

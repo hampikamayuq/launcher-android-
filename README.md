@@ -63,9 +63,9 @@ em [`docs/privacidade.md`](docs/privacidade.md).
 
 ## Tamanho
 
-| | Cascata 0.9.0 `lite` (release, R8) | Cascata 0.9.0 `full` (release, R8) | Niagara 1.16.28 |
+| | Cascata 1.0.0 `lite` (release, R8 + Baseline Profile) | Cascata 1.0.0 `full` (release, R8 + Baseline Profile) | Niagara 1.16.28 |
 |---|---|---|---|
-| APK | **2.162.291 bytes** (≈ 2,06 MB) | **2.186.143 bytes** (≈ 2,08 MB) | 13,4 MB |
+| APK | **2.277.037 bytes** (≈ 2,17 MB) | **2.284.505 bytes** (≈ 2,18 MB) | 13,4 MB |
 | Permissões | `ACCESS_HIDDEN_PROFILES`, `READ_CALENDAR`, `READ_CONTACTS`, `PACKAGE_USAGE_STATS`, `BIND_APPWIDGET` (sistema) | as mesmas + `INTERNET`, `ACCESS_COARSE_LOCATION` | 26 |
 
 Todas as permissões listadas são pedidas só ao ligar o recurso correspondente,
