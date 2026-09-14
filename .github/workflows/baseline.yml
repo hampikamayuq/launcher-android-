@@ -10,6 +10,13 @@ on:
   schedule:
     # Todo dia 1º às 04:00 UTC.
     - cron: "0 4 1 * *"
+  # Quando o gerador ou este arquivo mudam, o perfil precisa acompanhar. Nesse
+  # caso o resultado é commitado na própria branch (não há PR a abrir contra
+  # ela mesma).
+  push:
+    paths:
+      - "baselineprofile/**"
+      - ".github/workflows/baseline.yml"
 
 concurrency:
   group: baseline-profile
@@ -90,8 +97,17 @@ jobs:
           fi
           git reset
 
+      - name: Commitar os perfis na branch (execução por push)
+        if: steps.diff.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/*/generated/baselineProfiles
+          git commit -m "chore: atualiza Baseline Profiles (gerados no CI)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
       - name: Abrir PR com os perfis atualizados
-        if: steps.diff.outputs.changed == 'true'
+        if: steps.diff.outputs.changed == 'true' && github.event_name != 'push'
         uses: peter-evans/create-pull-request@v7
         with:
           branch: chore/baseline-profile
