@@ -73,6 +73,19 @@ class UsagePrefs(private val context: Context) {
             if (value == null) prefs.remove(limitKey(packageName)) else prefs[limitKey(packageName)] = value
         }
     }
+
+    /**
+     * Grava tudo de uma vez, sem olhar o que havia — é o que a restauração
+     * precisa. `write` já apaga os limites que não vieram no mapa.
+     */
+    suspend fun replace(settings: UsageSettings) {
+        context.usageDataStore.edit { prefs -> prefs.write(settings.coerced()) }
+    }
+
+    /** Limpa as chaves: a leitura volta a devolver os defaults (recurso desligado, sem limites). */
+    suspend fun reset() {
+        context.usageDataStore.edit { it.clear() }
+    }
 }
 
 private fun Preferences.toSettings(): UsageSettings = UsageSettings(

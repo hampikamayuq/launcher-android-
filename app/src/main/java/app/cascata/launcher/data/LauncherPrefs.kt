@@ -101,4 +101,26 @@ class LauncherPrefs(private val context: Context) {
             if (trimmed.isNullOrEmpty()) prefs.remove(prefKey) else prefs[prefKey] = trimmed
         }
     }
+
+    /**
+     * Substitui os três conjuntos de uma vez, para restaurar um backup. Os
+     * apelidos antigos saem antes: cada um é uma preferência própria, então
+     * gravar por cima deixaria vivos os que o arquivo não tem.
+     */
+    suspend fun restore(favorites: List<String>, hidden: Set<String>, aliases: Map<String, String>) {
+        context.dataStore.edit { prefs ->
+            prefs[FAVORITES_ORDER] = encodeKeys(favorites)
+            prefs[HIDDEN] = hidden
+            prefs.asMap().keys.filter { aliasEntryKey(it.name) != null }.forEach { prefs.remove(it) }
+            aliases.forEach { (key, alias) ->
+                val trimmed = alias.trim()
+                if (trimmed.isNotEmpty()) prefs[stringPreferencesKey(aliasPrefName(key))] = trimmed
+            }
+        }
+    }
+
+    /** Limpa as chaves: o launcher volta ao estado de app recém-instalado. */
+    suspend fun reset() {
+        context.dataStore.edit { it.clear() }
+    }
 }

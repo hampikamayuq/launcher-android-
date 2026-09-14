@@ -36,6 +36,11 @@ class GlancePrefs(private val context: Context) {
         context.glanceDataStore.edit { prefs -> prefs.write(transform(prefs.toSettings())) }
     }
 
+    /** Grava tudo de uma vez, sem olhar o que havia — é o que a restauração precisa. */
+    suspend fun replace(settings: GlanceSettings) {
+        context.glanceDataStore.edit { prefs -> prefs.write(settings) }
+    }
+
     /** Limpa as chaves: a leitura volta a devolver os defaults (tudo desligado). */
     suspend fun reset() {
         context.glanceDataStore.edit { it.clear() }

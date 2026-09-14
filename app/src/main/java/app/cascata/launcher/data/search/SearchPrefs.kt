@@ -51,6 +51,16 @@ class SearchPrefs(private val context: Context) {
     suspend fun update(transform: (SearchSettings) -> SearchSettings) {
         context.searchDataStore.edit { prefs -> prefs.write(transform(prefs.toSettings())) }
     }
+
+    /** Grava tudo de uma vez, sem olhar o que havia — é o que a restauração precisa. */
+    suspend fun replace(settings: SearchSettings) {
+        context.searchDataStore.edit { prefs -> prefs.write(settings) }
+    }
+
+    /** Limpa as chaves: a leitura volta a devolver os defaults. */
+    suspend fun reset() {
+        context.searchDataStore.edit { it.clear() }
+    }
 }
 
 private fun Preferences.toSettings(): SearchSettings = SearchSettings(

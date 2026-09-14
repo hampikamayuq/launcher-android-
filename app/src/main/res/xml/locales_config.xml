@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Os idiomas que o app traduz, para o seletor por app do Android 13+. O primeiro
+  é o padrão: `res/values` é pt-BR, e é para ele que o sistema cai quando o
+  idioma do aparelho não está na lista.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="pt-BR" />
+    <locale android:name="en" />
+    <locale android:name="es" />
+</locale-config>

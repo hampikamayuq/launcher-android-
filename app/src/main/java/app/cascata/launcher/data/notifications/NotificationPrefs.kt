@@ -62,6 +62,16 @@ class NotificationPrefs(private val context: Context) {
             current.copy(mutedPackages = next)
         }
     }
+
+    /** Grava tudo de uma vez, sem olhar o que havia — é o que a restauração precisa. */
+    suspend fun replace(settings: NotificationSettings) {
+        context.notificationDataStore.edit { prefs -> prefs.write(settings) }
+    }
+
+    /** Limpa as chaves: a leitura volta a devolver os defaults (recurso desligado). */
+    suspend fun reset() {
+        context.notificationDataStore.edit { it.clear() }
+    }
 }
 
 private fun Preferences.toSettings(): NotificationSettings = NotificationSettings(

@@ -3,6 +3,7 @@ package app.cascata.launcher
 import android.app.Application
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
+import app.cascata.launcher.data.backup.BackupManager
 import app.cascata.launcher.data.glance.AlarmSource
 import app.cascata.launcher.data.glance.BatterySource
 import app.cascata.launcher.data.glance.CalendarSource
@@ -15,6 +16,7 @@ import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.notifications.NotificationAccess
 import app.cascata.launcher.data.notifications.NotificationPrefs
 import app.cascata.launcher.data.notifications.NotificationStore
+import app.cascata.launcher.data.onboarding.OnboardingPrefs
 import app.cascata.launcher.data.search.ContactsSource
 import app.cascata.launcher.data.search.SearchPrefs
 import app.cascata.launcher.data.theme.FontStore
@@ -79,4 +81,24 @@ class CascataApp : Application() {
     val usagePrefs: UsagePrefs by lazy { UsagePrefs(this) }
     val usageAccess: UsageAccess by lazy { UsageAccess(this) }
     val usageSource: UsageSource by lazy { UsageSource(this, usageAccess) }
+
+    // Fase 8. O gerenciador junta os DataStores que já existem: criá-lo não lê
+    // nada, e a versão do app só entra no envelope do arquivo exportado.
+    val onboardingPrefs: OnboardingPrefs by lazy { OnboardingPrefs(this) }
+    val backupManager: BackupManager by lazy {
+        BackupManager(
+            launcherPrefs = launcherPrefs,
+            themePrefs = themePrefs,
+            glancePrefs = glancePrefs,
+            notificationPrefs = notificationPrefs,
+            searchPrefs = searchPrefs,
+            usagePrefs = usagePrefs,
+            widgetPrefs = widgetPrefs,
+            appVersion = appVersion,
+        )
+    }
+
+    /** O que o usuário vê como versão; "?" se o próprio pacote não souber dizer. */
+    private val appVersion: String
+        get() = packageManager.getPackageInfo(packageName, 0).versionName ?: "?"
 }
