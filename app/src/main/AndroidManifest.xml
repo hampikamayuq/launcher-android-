@@ -53,6 +53,16 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!--
+      Acesso especial, não permissão de diálogo: quem concede é o usuário na tela
+      do sistema (Settings.ACTION_USAGE_ACCESS_SETTINGS), e só é pedida ao ligar o
+      recurso de uso do aparelho. Declarada e não concedida é o estado normal — o
+      lint avisa que só app de sistema a recebe na instalação, e é esse o ponto.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!--
       BIND_APPWIDGET é permissão de sistema: um launcher de terceiro nunca a
       recebe na instalação. Declará-la é o que o AOSP faz — ela não é concedida
       aqui, mas é o que permite ao sistema lembrar da autorização que o usuário

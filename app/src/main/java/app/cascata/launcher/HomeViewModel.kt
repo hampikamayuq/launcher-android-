@@ -31,6 +31,12 @@ import app.cascata.launcher.data.search.SystemSettingsIndex
 import app.cascata.launcher.data.search.evaluate
 import app.cascata.launcher.data.search.looksLikeExpression
 import app.cascata.launcher.data.search.webSearchIntent
+import app.cascata.launcher.data.usage.AppUsage
+import app.cascata.launcher.data.usage.UsageAccess
+import app.cascata.launcher.data.usage.UsagePrefs
+import app.cascata.launcher.data.usage.UsageSettings
+import app.cascata.launcher.data.usage.UsageSource
+import app.cascata.launcher.data.usage.shouldPause
 import app.cascata.launcher.data.withAlias
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,6 +45,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -89,6 +96,18 @@ data class SearchExtras(
     val web: Pair<SearchEngine, String>? = null,
 )
 
+/**
+ * A pausa deliberada: o app que o usuário pediu, quanto já usou hoje e o limite
+ * que estourou. A UI mostra a tela de "respira" por [pauseSeconds] antes de
+ * liberar o botão de abrir.
+ */
+data class PausePrompt(
+    val entry: AppEntry,
+    val usedTodayMillis: Long,
+    val limitMinutes: Int,
+    val pauseSeconds: Int,
+)
+
 class HomeViewModel(
     private val repository: AppRepository,
     private val prefs: LauncherPrefs,
@@ -104,6 +123,13 @@ class HomeViewModel(
     /** Fase 6. Nulos enquanto a UI não os passar: a busca fica só com os apps. */
     private val searchPrefs: SearchPrefs? = null,
     private val contactsSource: ContactsSource? = null,
+    /**
+     * Fase 7. Nulos enquanto a UI não os passar: sem eles não há card de uso e
+     * todo app abre direto, como antes.
+     */
+    private val usageSource: UsageSource? = null,
+    private val usagePrefs: UsagePrefs? = null,
+    private val usageAccess: UsageAccess? = null,
 ) : ViewModel() {
 
     /** O que depende do sistema, não do DataStore; re-lido a cada onResume. */
@@ -239,6 +265,95 @@ class HomeViewModel(
             )
         }
 
+    /**
+     * Fase 7. `Eagerly` de propósito, ao contrário dos outros: o gate de abertura
+     * lê `value` no toque do usuário, e nada garante que alguma tela esteja
+     * assinando o fluxo naquele instante.
+     */
+    val usageSettings: StateFlow<UsageSettings> =
+        (usagePrefs?.settings ?: flowOf(UsageSettings.DEFAULT))
+            .stateIn(viewModelScope, SharingStarted.Eagerly, UsageSettings.DEFAULT)
+
+    /** Contador que [refreshUsage] incrementa: recarrega sem depender de mudança nas prefs. */
+    private val usageRefresh = MutableStateFlow(0)
+
+    /**
+     * Uso de hoje, do maior para o menor. Vazio com o recurso desligado ou sem o
+     * acesso do sistema. Recarrega ao ligar o recurso e a cada [refreshUsage];
+     * `mapLatest` descarta a consulta anterior quando chega outra.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val usageToday: StateFlow<List<AppUsage>> =
+        combine(usageSettings, usageRefresh) { settings, _ -> settings }
+            .mapLatest { settings -> loadUsage(settings) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val pausePromptState = MutableStateFlow<PausePrompt?>(null)
+
+    /** Não nulo enquanto a tela de "respira" estiver no caminho de um app. */
+    val pausePrompt: StateFlow<PausePrompt?> = pausePromptState.asStateFlow()
+
+    /** Recurso desligado ou acesso não concedido: lista vazia, sem consultar nada. */
+    private suspend fun loadUsage(settings: UsageSettings): List<AppUsage> {
+        val source = usageSource ?: return emptyList()
+        if (!settings.enabled || usageAccess?.hasAccess() != true) return emptyList()
+        return source.today()
+    }
+
+    /**
+     * A Activity chama no `onResume`: o acesso pode ter sido concedido na tela do
+     * sistema e o tempo de hoje andou enquanto estávamos fora. É também o que a
+     * UI chama logo depois de ligar o recurso.
+     */
+    fun refreshUsage() {
+        usageSource?.invalidate()
+        usageRefresh.value += 1
+    }
+
+    /**
+     * Por onde a lista e os favoritos passam a abrir um app. Sem recurso ligado
+     * ou sem limite para o pacote, abre na hora — a pausa nunca entra no caminho
+     * por engano.
+     */
+    fun onLaunchRequested(entry: AppEntry) {
+        val settings = usageSettings.value
+        val limit = settings.limitsMinutes[entry.component.packageName]
+        val source = usageSource
+        if (source == null || !settings.enabled || limit == null) {
+            repository.launch(entry)
+            return
+        }
+        viewModelScope.launch {
+            // Sem acesso a fonte devolve vazio: o usado fica em zero e o app abre.
+            val used = source.today()
+                .firstOrNull { it.packageName == entry.component.packageName }
+                ?.totalMillis ?: 0L
+            if (shouldPause(used, limit)) {
+                pausePromptState.value = PausePrompt(entry, used, limit, settings.pauseSeconds)
+            } else {
+                repository.launch(entry)
+            }
+        }
+    }
+
+    /** O usuário respirou e decidiu abrir assim mesmo. */
+    fun onPauseConfirmed() {
+        val prompt = pausePromptState.value ?: return
+        pausePromptState.value = null
+        repository.launch(prompt.entry)
+    }
+
+    /** Desistiu: nada abre. */
+    fun onPauseDismissed() {
+        pausePromptState.value = null
+    }
+
+    /** `null` (ou zero) tira o limite do app. */
+    fun onSetLimit(packageName: String, minutes: Int?) {
+        val usage = usagePrefs ?: return
+        viewModelScope.launch { usage.setLimit(packageName, minutes) }
+    }
+
     init {
         refreshDefaultLauncher()
     }
@@ -353,6 +468,9 @@ class HomeViewModel(
         private val appContext: Context? = null,
         private val searchPrefs: SearchPrefs? = null,
         private val contactsSource: ContactsSource? = null,
+        private val usageSource: UsageSource? = null,
+        private val usagePrefs: UsagePrefs? = null,
+        private val usageAccess: UsageAccess? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = HomeViewModel(
@@ -363,6 +481,9 @@ class HomeViewModel(
             appContext,
             searchPrefs,
             contactsSource,
+            usageSource,
+            usagePrefs,
+            usageAccess,
         ) as T
     }
 }

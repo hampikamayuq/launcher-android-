@@ -20,6 +20,9 @@ import app.cascata.launcher.data.search.SearchPrefs
 import app.cascata.launcher.data.theme.FontStore
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.data.theme.WallpaperColorsSource
+import app.cascata.launcher.data.usage.UsageAccess
+import app.cascata.launcher.data.usage.UsagePrefs
+import app.cascata.launcher.data.usage.UsageSource
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetPrefs
 import kotlinx.coroutines.CoroutineScope
@@ -70,4 +73,10 @@ class CascataApp : Application() {
     // permissão concedida ela devolve lista vazia sem tocar no provedor.
     val searchPrefs: SearchPrefs by lazy { SearchPrefs(this) }
     val contactsSource: ContactsSource by lazy { ContactsSource(this) }
+
+    // Fase 7. Nada de uso é persistido: a fonte lê o histórico que o sistema já
+    // mantém, e o DataStore guarda só limites, pausa e o card.
+    val usagePrefs: UsagePrefs by lazy { UsagePrefs(this) }
+    val usageAccess: UsageAccess by lazy { UsageAccess(this) }
+    val usageSource: UsageSource by lazy { UsageSource(this, usageAccess) }
 }
