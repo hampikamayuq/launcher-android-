@@ -23,6 +23,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -68,7 +72,9 @@ fun UsageSheet(
                 text = stringResource(R.string.usage_today),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .semantics { heading() }
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
             )
 
             rows.forEach { item ->
@@ -113,11 +119,20 @@ private fun UsageRow(
     repository: AppRepository,
     onClick: () -> Unit,
 ) {
+    // "1 h 20 min" lido em voz alta vira "um h"; a linha inteira é anunciada
+    // com o tempo por extenso, e o limite junto.
+    val description = stringResource(
+        R.string.usage_row_description,
+        entry?.label ?: item.packageName,
+        durationSpoken(item.totalMillis),
+        limitText(limit),
+    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description }
             .padding(horizontal = 24.dp, vertical = 8.dp),
     ) {
         // Sem entrada não há ícone, mas o espaço dele fica: a lista não desalinha.

@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -40,14 +42,20 @@ fun HiddenAppsSheet(
             text = stringResource(R.string.hidden_apps),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            modifier = Modifier
+                .semantics { heading() }
+                .padding(horizontal = 24.dp, vertical = 8.dp),
         )
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
             items(count = hidden.size, key = { hidden[it].key }) { index ->
                 val entry = hidden[index]
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // Ícone e nome são uma parada só; o botão tem a sua.
+                        .semantics(mergeDescendants = true) { }
+                        .padding(horizontal = 24.dp, vertical = 4.dp),
                 ) {
                     AppIcon(entry = entry, repository = repository, size = HIDDEN_ICON)
                     Spacer(Modifier.width(16.dp))
@@ -62,7 +70,8 @@ fun HiddenAppsSheet(
                     IconButton(onClick = { onUnhide(entry) }) {
                         Icon(
                             imageVector = Icons.Outlined.Add,
-                            contentDescription = stringResource(R.string.unhide),
+                            // "Mostrar na lista" repetido não diz de qual app é.
+                            contentDescription = stringResource(R.string.unhide_app, entry.label),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }

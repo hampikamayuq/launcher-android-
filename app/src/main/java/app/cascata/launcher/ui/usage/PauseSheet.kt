@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -109,7 +110,11 @@ fun PauseSheet(
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                // Ícone e nome são o título da folha: uma parada só, e um cabeçalho.
+                modifier = Modifier.semantics(mergeDescendants = true) { heading() },
+            ) {
                 AppIcon(entry = prompt.entry, repository = repository, size = PAUSE_ICON)
                 Spacer(Modifier.width(14.dp))
                 Text(

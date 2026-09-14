@@ -42,6 +42,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -102,6 +106,8 @@ fun HomeScreen(
     widgetHost: WidgetHostManager,
     widgetActions: WidgetActions,
     modifier: Modifier = Modifier,
+    /** Falso enquanto as boas-vindas de três telas estão na frente da home. */
+    onboardingDone: Boolean = true,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     // Já vem filtrado por silenciados e pelo recurso desligado: mapa vazio é o
@@ -417,7 +423,9 @@ fun HomeScreen(
         }
     }
 
-    if (state.showWelcome) {
+    // O convite de virar padrão espera o onboarding terminar: duas boas-vindas
+    // empilhadas seriam uma a mais.
+    if (state.showWelcome && onboardingDone) {
         WelcomeSheet(
             repository = repository,
             onLauncherChosen = viewModel::refreshDefaultLauncher,
@@ -475,7 +483,10 @@ private fun SectionHeader(letter: Char) {
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+        // Cabeçalho de seção: o leitor de tela salta de letra em letra por ele.
+        modifier = Modifier
+            .semantics { heading() }
+            .padding(top = 12.dp, bottom = 4.dp),
     )
 }
 
@@ -497,6 +508,7 @@ private fun AppRow(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
+                role = Role.Button,
                 onClick = onLaunch,
                 onLongClick = onLongPress,
             )
@@ -524,7 +536,13 @@ private fun AppRow(
         }
         if (favorite) {
             Spacer(Modifier.width(6.dp))
-            Text(text = "•", color = MaterialTheme.colorScheme.primary)
+            val favoriteLabel = stringResource(R.string.favorite_marker)
+            Text(
+                text = "•",
+                color = MaterialTheme.colorScheme.primary,
+                // Sem isto o leitor de tela anuncia o caractere do marcador.
+                modifier = Modifier.semantics { contentDescription = favoriteLabel },
+            )
         }
         // O indicador tem toque próprio (expandir); o resto da linha abre o app.
         NotificationBadge(
@@ -544,7 +562,7 @@ private fun HiddenAppsEntry(count: Int, onClick: () -> Unit) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick)
+            .combinedClickable(role = Role.Button, onClick = onClick)
             .padding(top = 24.dp, bottom = 32.dp),
     )
 }

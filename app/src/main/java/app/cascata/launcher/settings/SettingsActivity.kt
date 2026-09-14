@@ -28,6 +28,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +41,7 @@ import app.cascata.launcher.data.glance.GlanceSettings
 import app.cascata.launcher.data.glance.weather.WeatherCache
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.data.backup.BackupManager
 import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.notifications.NotificationAccess
 import app.cascata.launcher.data.notifications.NotificationPrefs
@@ -134,6 +137,7 @@ class SettingsActivity : ComponentActivity() {
                     notificationAccess = app.notificationAccess,
                     widgetHost = app.widgetHost,
                     widgetPrefs = app.widgetPrefs,
+                    backupManager = app.backupManager,
                     searchPrefs = app.searchPrefs,
                     contactsSource = app.contactsSource,
                     usagePrefs = app.usagePrefs,
@@ -173,6 +177,7 @@ private fun SettingsScreen(
     notificationAccess: NotificationAccess,
     widgetHost: WidgetHostManager,
     widgetPrefs: WidgetPrefs,
+    backupManager: BackupManager,
     searchPrefs: SearchPrefs,
     contactsSource: ContactsSource,
     usagePrefs: UsagePrefs,
@@ -192,7 +197,12 @@ private fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.settings),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -258,6 +268,14 @@ private fun SettingsScreen(
             IconPackSection(settings = settings, iconPacks = iconPacks, update = update)
             WallpaperSection()
             ThemeSection(settings = settings, themePrefs = themePrefs, onMessage = message)
+            // Depois do tema, e do app inteiro: "Restaurar padrões" continua
+            // sendo só da aparência, na seção acima.
+            BackupSection(
+                backupManager = backupManager,
+                widgetPrefs = widgetPrefs,
+                widgetHost = widgetHost,
+                onMessage = message,
+            )
             AboutSection()
         }
     }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -25,7 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -182,15 +184,27 @@ private fun MutedAppsSheet(
             text = stringResource(R.string.notifications_muted),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = SIDE_PADDING, vertical = 8.dp),
+            modifier = Modifier
+                .semantics { heading() }
+                .padding(horizontal = SIDE_PADDING, vertical = 8.dp),
         )
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
             items(count = apps.size, key = { apps[it].key }) { index ->
                 val entry = apps[index]
+                val isMuted = entry.component.packageName in muted
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
+                        // A linha inteira silencia o app, como nas outras
+                        // linhas de interruptor da tela.
+                        .toggleable(
+                            value = isMuted,
+                            role = Role.Switch,
+                            onValueChange = { on ->
+                                onToggle(entry.component.packageName, on)
+                            },
+                        )
                         .padding(horizontal = SIDE_PADDING, vertical = 4.dp),
                 ) {
                     AppIcon(entry = entry, repository = repository, size = MUTED_ICON)
@@ -203,11 +217,7 @@ private fun MutedAppsSheet(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    Switch(
-                        checked = entry.component.packageName in muted,
-                        onCheckedChange = { on -> onToggle(entry.component.packageName, on) },
-                        modifier = Modifier.semantics { contentDescription = entry.label },
-                    )
+                    Switch(checked = isMuted, onCheckedChange = null)
                 }
             }
         }

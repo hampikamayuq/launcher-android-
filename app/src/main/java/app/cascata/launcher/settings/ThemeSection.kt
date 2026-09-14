@@ -182,9 +182,10 @@ internal fun AboutSection() {
 
 /**
  * Lê no máximo [max] bytes como UTF-8 e recusa o que passar disso: o seletor de
- * arquivos deixa escolher qualquer coisa, inclusive um vídeo.
+ * arquivos deixa escolher qualquer coisa, inclusive um vídeo. Serve ao tema e ao
+ * backup — cada um com o seu teto.
  */
-private fun InputStream.readLimited(max: Int): String {
+internal fun InputStream.readLimited(max: Int): String {
     val buffer = ByteArray(max + 1)
     var total = 0
     while (total <= max) {
@@ -192,6 +193,6 @@ private fun InputStream.readLimited(max: Int): String {
         if (read <= 0) break
         total += read
     }
-    require(total <= max) { "arquivo grande demais para um tema" }
+    require(total <= max) { "arquivo grande demais" }
     return String(buffer, 0, total, Charsets.UTF_8)
 }

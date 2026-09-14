@@ -21,6 +21,7 @@ import app.cascata.launcher.data.widgets.removeWidget
 import app.cascata.launcher.data.widgets.resizeSlot
 import app.cascata.launcher.data.widgets.setActive
 import app.cascata.launcher.ui.HomeScreen
+import app.cascata.launcher.ui.onboarding.OnboardingScreen
 import app.cascata.launcher.ui.theme.CascataTheme
 import app.cascata.launcher.ui.widgets.WidgetActions
 import app.cascata.launcher.widgets.WidgetPickerActivity
@@ -86,6 +87,11 @@ class HomeActivity : ComponentActivity() {
             val widgetLayout by app.widgetPrefs.layout
                 .collectAsStateWithLifecycle(initialValue = WidgetLayout.EMPTY)
 
+            // Nulo enquanto a preferência não chegou: desenhar a home e trocá-la
+            // pelo onboarding um quadro depois daria um piscar a cada abertura.
+            val onboardingDone: Boolean? by app.onboardingPrefs.done
+                .collectAsStateWithLifecycle(initialValue = null)
+
             val widgetActions = remember {
                 WidgetActions(
                     onResize = { slotId, cells -> updateWidgets { it.resizeSlot(slotId, cells) } },
@@ -106,21 +112,42 @@ class HomeActivity : ComponentActivity() {
                 customFont = customFont,
                 wallpaperSeed = wallpaperSeed,
             ) {
-                HomeScreen(
-                    viewModel = viewModel,
-                    repository = app.appRepository,
-                    clockStyle = settings.clockStyle,
-                    glance = glance,
-                    alarmSource = app.alarmSource,
-                    batterySource = app.batterySource,
-                    calendarSource = app.calendarSource,
-                    weatherSource = app.weatherSource,
-                    mediaSource = app.mediaSource,
-                    usageSource = app.usageSource,
-                    widgetLayout = widgetLayout,
-                    widgetHost = app.widgetHost,
-                    widgetActions = widgetActions,
-                )
+                when (onboardingDone) {
+                    // Ainda lendo a preferência: nem home nem boas-vindas.
+                    null -> Unit
+
+                    false -> OnboardingScreen(
+                        repository = app.appRepository,
+                        density = settings.density,
+                        // Gravado no toque: sair do onboarding já deixa a lista
+                        // no espaçamento escolhido.
+                        onDensityChange = { chosen ->
+                            lifecycleScope.launch {
+                                app.themePrefs.update { it.copy(density = chosen) }
+                            }
+                        },
+                        onFinish = { lifecycleScope.launch { app.onboardingPrefs.markDone() } },
+                    )
+
+                    else -> HomeScreen(
+                        viewModel = viewModel,
+                        repository = app.appRepository,
+                        clockStyle = settings.clockStyle,
+                        glance = glance,
+                        alarmSource = app.alarmSource,
+                        batterySource = app.batterySource,
+                        calendarSource = app.calendarSource,
+                        weatherSource = app.weatherSource,
+                        mediaSource = app.mediaSource,
+                        usageSource = app.usageSource,
+                        widgetLayout = widgetLayout,
+                        widgetHost = app.widgetHost,
+                        widgetActions = widgetActions,
+                        // O convite de virar padrão é para quem já passou pelas
+                        // boas-vindas — ele não sobe por cima delas.
+                        onboardingDone = true,
+                    )
+                }
             }
         }
     }

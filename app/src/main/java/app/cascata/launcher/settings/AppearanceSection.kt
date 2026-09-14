@@ -33,8 +33,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -140,10 +142,9 @@ private fun AccentSwatches(selected: Int, onSelect: (Int) -> Unit) {
             Swatch(
                 argb = argb,
                 selected = chosen,
-                description = stringResource(
-                    if (chosen) R.string.color_swatch_selected else R.string.color_swatch,
-                    index + 1,
-                ),
+                // O "selecionada" saiu do nome: quem diz isso é o estado do nó,
+                // e o TalkBack já o lê sozinho na fileira inteira.
+                description = stringResource(R.string.color_swatch, index + 1),
                 onClick = { onSelect(argb) },
             )
         }
@@ -152,9 +153,7 @@ private fun AccentSwatches(selected: Int, onSelect: (Int) -> Unit) {
         Swatch(
             argb = selected,
             selected = custom,
-            description = stringResource(
-                if (custom) R.string.color_custom_selected else R.string.color_custom,
-            ),
+            description = stringResource(R.string.color_custom),
             idle = Icons.Outlined.Edit,
             onClick = { editing = true },
         )
@@ -184,6 +183,8 @@ private fun Swatch(
     idle: ImageVector? = null,
     onClick: () -> Unit,
 ) {
+    val selectedState = stringResource(R.string.state_selected)
+    val unselectedState = stringResource(R.string.state_not_selected)
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -199,8 +200,11 @@ private fun Swatch(
                 },
                 shape = CircleShape,
             )
-            .selectable(selected = selected, onClick = onClick)
-            .semantics { contentDescription = description },
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .semantics {
+                contentDescription = description
+                stateDescription = if (selected) selectedState else unselectedState
+            },
     ) {
         val mark = if (selected) Icons.Outlined.Check else idle
         if (mark != null) {

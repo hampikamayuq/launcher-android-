@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -35,7 +36,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +57,10 @@ internal fun SettingsSection(title: String, content: @Composable ColumnScope.() 
             text = title,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = SIDE_PADDING, vertical = 8.dp),
+            // Título de seção: o leitor de tela salta de seção em seção por ele.
+            modifier = Modifier
+                .semantics { heading() }
+                .padding(horizontal = SIDE_PADDING, vertical = 8.dp),
         )
         content()
     }
@@ -75,7 +81,7 @@ internal fun SettingRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = SIDE_PADDING, vertical = 12.dp),
     ) {
         Text(
@@ -119,7 +125,18 @@ internal fun SwitchRow(
             .fillMaxWidth()
             .padding(horizontal = SIDE_PADDING, vertical = 8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            // A linha inteira é o interruptor: o alvo de toque passa a ser o
+            // rótulo junto com ele, e o leitor de tela anuncia "ativado" /
+            // "desativado" uma vez só, no lugar de um nó solto ao lado.
+            modifier = Modifier.toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
+        ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
@@ -139,13 +156,9 @@ internal fun SwitchRow(
                 }
             }
             Spacer(Modifier.width(12.dp))
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                enabled = enabled,
-                // O interruptor sozinho não diz do que é: o rótulo está ao lado.
-                modifier = Modifier.semantics { contentDescription = label },
-            )
+            // Sem callback próprio: quem recebe o toque é a linha inteira, e
+            // um segundo nó tocável só faria o TalkBack repetir o mesmo estado.
+            Switch(checked = checked, onCheckedChange = null, enabled = enabled)
         }
         action?.invoke()
     }
@@ -203,12 +216,19 @@ internal fun <T> SegmentedChoice(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
+        val selectedState = stringResource(R.string.state_selected)
+        val unselectedState = stringResource(R.string.state_not_selected)
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             options.forEachIndexed { index, (value, text) ->
+                val chosen = value == selected
                 SegmentedButton(
-                    selected = value == selected,
+                    selected = chosen,
                     onClick = { onSelect(value) },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                    // O check desenhado não é falado: o estado vai por extenso.
+                    modifier = Modifier.semantics {
+                        stateDescription = if (chosen) selectedState else unselectedState
+                    },
                     // O botão selecionado ganha o ícone de check por padrão — a
                     // diferença não fica só na cor de fundo. Duas linhas porque
                     // "Papel de parede" não cabe num terço da tela de um celular.

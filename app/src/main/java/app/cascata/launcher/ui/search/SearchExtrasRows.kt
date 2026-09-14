@@ -46,8 +46,11 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -173,7 +176,10 @@ private fun SearchHeader(title: String) {
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+        // Cabeçalho de seção da busca, como as letras da lista.
+        modifier = Modifier
+            .semantics { heading() }
+            .padding(top = 12.dp, bottom = 4.dp),
     )
 }
 
@@ -235,7 +241,15 @@ private fun CalculationCard(result: CalculationResult) {
                     text = stringResource(R.string.search_copied),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.End),
+                    // Aparece sozinho depois do toque e some sozinho: sem região
+                    // viva o leitor de tela nunca saberia que a cópia aconteceu.
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        // Nó próprio: dentro do nó do card ele seria absorvido
+                        // pela descrição do resultado e nunca seria anunciado.
+                        .semantics(mergeDescendants = true) {
+                            liveRegion = LiveRegionMode.Polite
+                        },
                 )
             }
         }

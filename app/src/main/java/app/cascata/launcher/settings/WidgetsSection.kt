@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -93,15 +95,18 @@ internal fun WidgetsSection(
         }
 
         layout.slots.forEach { slot ->
+            val slotLabel = labels[slot.id].orEmpty()
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
+                    // Nome e altura são uma parada só; o botão tem a sua.
+                    .semantics(mergeDescendants = true) { }
                     .padding(start = SIDE_PADDING, end = 8.dp, top = 4.dp, bottom = 4.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = labels[slot.id].orEmpty(),
+                        text = slotLabel,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -118,7 +123,10 @@ internal fun WidgetsSection(
                     )
                 }
                 Spacer(Modifier.width(8.dp))
+                val removeLabel = stringResource(R.string.widget_remove_named, slotLabel)
                 TextButton(
+                    // Um "Remover" por slot: sem o nome, todos soam iguais.
+                    modifier = Modifier.semantics { contentDescription = removeLabel },
                     onClick = {
                         // O slot sai inteiro: cada id volta para o host antes de
                         // sumir do layout, senão ele ficaria alocado para sempre.

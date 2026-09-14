@@ -11,7 +11,6 @@
     <string name="app_info">Informações do app</string>
     <string name="uninstall">Desinstalar</string>
     <string name="hide">Esconder da lista</string>
-    <string name="unhide">Mostrar na lista</string>
     <string name="hidden_apps">Apps escondidos</string>
     <string name="hidden_apps_count">Apps escondidos (%1$d)</string>
     <string name="rename">Renomear</string>
@@ -21,6 +20,18 @@
     <string name="welcome_body">Sendo a tela inicial padrão, o Cascata mostra os atalhos dos apps e responde ao botão Home.</string>
     <string name="welcome_action">Definir como padrão</string>
     <string name="welcome_dismiss">Agora não</string>
+
+    <!-- Fase 8: as três telas da primeira abertura. -->
+    <string name="onboarding_home_title">Sua tela inicial</string>
+    <string name="onboarding_home_body">O Cascata é uma lista só: todos os apps em ordem alfabética, com um índice de letras na lateral para saltar de A a Z sem rolar.</string>
+    <string name="onboarding_default_done">Já é a tela inicial</string>
+    <string name="onboarding_density_body">Quanto espaço cada app ocupa na lista. Dá para mudar depois nas configurações.</string>
+    <string name="onboarding_index_title">Índice lateral</string>
+    <string name="onboarding_index_body">Arraste o dedo pelas letras da borda direita: a lista acompanha e para na letra que estiver sob o dedo.</string>
+    <string name="onboarding_skip">Pular</string>
+    <string name="onboarding_next">Próximo</string>
+    <string name="onboarding_start">Começar</string>
+    <string name="onboarding_page_of">Página %1$d de %2$d</string>
     <string name="private_profile">Perfil privado</string>
     <string name="empty_search">Nenhum app para “%1$s”</string>
     <string name="jump_to_letter">Ir para a letra %1$s</string>
@@ -30,6 +41,15 @@
     <string name="action_back">Voltar</string>
     <string name="action_close">Fechar</string>
     <string name="action_restore">Restaurar</string>
+    <string name="action_replace">Substituir</string>
+
+    <!-- Fase 8: ditas só por leitores de tela. -->
+    <string name="state_selected">Selecionado</string>
+    <string name="state_not_selected">Não selecionado</string>
+    <string name="favorite_marker">Favorito</string>
+    <string name="unhide_app">Mostrar %1$s na lista</string>
+    <string name="usage_row_description">%1$s, %2$s, %3$s</string>
+    <string name="widget_remove_named">Remover %1$s</string>
 
     <string name="settings">Configurações</string>
     <string name="settings_open">Abrir configurações</string>
@@ -45,9 +65,7 @@
     <string name="color_source_wallpaper">Papel de parede</string>
     <string name="color_source_accent">Cor de destaque</string>
     <string name="color_swatch">Cor %1$d</string>
-    <string name="color_swatch_selected">Cor %1$d, selecionada</string>
     <string name="color_custom">Cor personalizada</string>
-    <string name="color_custom_selected">Cor personalizada, selecionada</string>
     <string name="color_custom_title">Cor personalizada</string>
     <string name="color_custom_hint">Seis dígitos hexadecimais, como #2E5AAC</string>
     <string name="color_custom_invalid">Use seis dígitos hexadecimais, como #2E5AAC</string>
@@ -302,6 +320,22 @@
     <string name="theme_import_failed">Não foi possível importar o tema</string>
     <string name="theme_reset">Restaurar padrões</string>
     <string name="theme_reset_body">Voltar toda a aparência ao padrão? Favoritos, apelidos e apps escondidos continuam como estão.</string>
+
+    <string name="section_backup">Backup</string>
+    <string name="backup_export">Exportar backup…</string>
+    <string name="backup_export_done">Backup exportado</string>
+    <string name="backup_export_failed">Não foi possível exportar o backup</string>
+    <string name="backup_import">Importar backup…</string>
+    <string name="backup_import_failed">Não foi possível importar o backup</string>
+    <string name="backup_replace_title">Substituir todas as configurações?</string>
+    <string name="backup_replace_body">Favoritos, apps escondidos, apelidos e todas as preferências passam a ser os do arquivo. O que está no aparelho e não está no backup deixa de existir.</string>
+    <string name="backup_include_widgets">Incluir widgets</string>
+    <string name="backup_include_widgets_body">Widgets de outro aparelho aparecem como indisponíveis até você recolocá-los.</string>
+    <string name="backup_restored">Backup restaurado</string>
+    <string name="backup_erase">Apagar tudo</string>
+    <string name="backup_erase_body">Apagar favoritos, apps escondidos, apelidos, widgets e todas as preferências? Só as preferências são apagadas: a fonte importada continua no aparelho, e o acesso a notificações e ao uso do aparelho continua concedido — quem os revoga são as configurações do sistema.</string>
+    <string name="backup_erased">Tudo apagado</string>
+    <string name="backup_footer">O arquivo contém suas preferências e o layout de widgets. Não contém histórico de uso nem notificações — o Cascata não guarda isso.</string>
 
     <string name="section_about">Sobre</string>
     <string name="about_version">Versão %1$s</string>

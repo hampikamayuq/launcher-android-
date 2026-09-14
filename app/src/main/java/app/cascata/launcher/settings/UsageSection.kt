@@ -29,7 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -231,7 +233,9 @@ private fun LimitsSheet(
             text = stringResource(R.string.usage_limits),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = SIDE_PADDING, vertical = 8.dp),
+            modifier = Modifier
+                .semantics { heading() }
+                .padding(horizontal = SIDE_PADDING, vertical = 8.dp),
         )
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
             items(count = apps.size, key = { apps[it].key }) { index ->
@@ -240,7 +244,7 @@ private fun LimitsSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { editing = entry }
+                        .clickable(role = Role.Button) { editing = entry }
                         .padding(horizontal = SIDE_PADDING, vertical = 6.dp),
                 ) {
                     AppIcon(entry = entry, repository = repository, size = LIMIT_ICON)

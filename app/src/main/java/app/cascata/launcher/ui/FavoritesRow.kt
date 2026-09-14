@@ -28,6 +28,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -83,6 +86,8 @@ fun FavoritesRow(
             text = stringResource(R.string.favorites),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
+            // Cabeçalho da seção, como as letras da lista.
+            modifier = Modifier.semantics { heading() },
         )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(FAVORITE_GAP),
@@ -107,6 +112,7 @@ fun FavoritesRow(
                             }
                         }
                         .combinedClickable(
+                            role = Role.Button,
                             onClick = { onLaunch(entry) },
                             // O arraste é de outro detector; aqui só evitamos que
                             // o toque longo termine virando um toque simples.

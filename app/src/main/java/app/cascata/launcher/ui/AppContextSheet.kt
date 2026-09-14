@@ -36,6 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -91,7 +94,9 @@ fun AppContextSheet(
                     text = stringResource(R.string.shortcuts),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .semantics { heading() }
+                        .padding(horizontal = 24.dp, vertical = 4.dp),
                 )
                 shortcuts.forEach { shortcut ->
                     ShortcutRow(
@@ -152,7 +157,11 @@ fun AppContextSheet(
 private fun SheetHeader(entry: AppEntry, repository: AppRepository) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            // Nome e nome original são uma coisa só, e é o título da folha.
+            .semantics(mergeDescendants = true) { heading() }
+            .padding(horizontal = 24.dp, vertical = 4.dp),
     ) {
         AppIcon(entry = entry, repository = repository, size = SHEET_ICON)
         Spacer(Modifier.width(16.dp))
@@ -191,7 +200,7 @@ private fun ShortcutRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 10.dp),
     ) {
         ShortcutIcon(shortcut = shortcut, repository = repository, size = SHORTCUT_ICON)
@@ -212,12 +221,13 @@ private fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 12.dp),
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = label,
+            // Decorativo: o rótulo ao lado é o mesmo texto.
+            contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(16.dp))

@@ -21,7 +21,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -90,7 +93,18 @@ fun AlphabetIndex(
                 text = letter.toString(),
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { contentDescription = jumpLabel },
+                // A letra não tem toque próprio — o índice inteiro é um gesto de
+                // arraste. Para o leitor de tela ela vira um botão de verdade:
+                // a ação de acessibilidade faz o mesmo salto, sem roubar o
+                // arraste de quem enxerga.
+                modifier = Modifier.semantics {
+                    contentDescription = jumpLabel
+                    role = Role.Button
+                    onClick {
+                        onLetterFocused(letter)
+                        true
+                    }
+                },
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
                 color = if (active) {
                     MaterialTheme.colorScheme.primary

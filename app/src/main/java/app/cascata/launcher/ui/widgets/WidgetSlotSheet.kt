@@ -27,6 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -61,13 +65,17 @@ internal fun WidgetSlotSheet(
     val labels = remember(slot.widgets, unavailable) {
         slot.widgets.map { widgetLabel(context, host, it.appWidgetId, unavailable) }
     }
+    // "Remover" sozinho se repete uma vez por widget da pilha.
+    val removeLabels = labels.map { stringResource(R.string.widget_remove_named, it) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Text(
             text = stringResource(R.string.widget_slot_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = SHEET_PADDING, vertical = 8.dp),
+            modifier = Modifier
+                .semantics { heading() }
+                .padding(horizontal = SHEET_PADDING, vertical = 8.dp),
         )
 
         val cells = pluralStringResource(R.plurals.widget_cells, slot.heightCells, slot.heightCells)
@@ -75,6 +83,9 @@ internal fun WidgetSlotSheet(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
+                // "Altura" e "2 células" são uma parada só; os dois botões,
+                // que já são nós próprios, continuam separados.
+                .semantics(mergeDescendants = true) { }
                 .padding(horizontal = SHEET_PADDING, vertical = 4.dp),
         ) {
             Text(
@@ -149,7 +160,13 @@ internal fun WidgetSlotSheet(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
-                TextButton(onClick = { actions.onRemove(slot.widgets[index].appWidgetId) }) {
+                TextButton(
+                    onClick = { actions.onRemove(slot.widgets[index].appWidgetId) },
+                    // Numa pilha, três botões "Remover" não dizem qual é qual.
+                    modifier = Modifier.semantics {
+                        contentDescription = removeLabels[index]
+                    },
+                ) {
                     Text(stringResource(R.string.widget_remove))
                 }
             }
@@ -171,7 +188,7 @@ private fun SheetRow(label: String, enabled: Boolean = true, onClick: () -> Unit
         },
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = SHEET_PADDING, vertical = 12.dp),
     )
 }

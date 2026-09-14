@@ -28,6 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -77,7 +80,7 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .weight(1f)
-                .clickable { openClock(context) }
+                .clickable(role = Role.Button) { openClock(context) }
                 .padding(vertical = 8.dp)
         ) {
             when (clockStyle) {
@@ -102,7 +105,11 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
                     locale = locale,
                 )
 
-                ClockStyle.ANALOG -> AnalogClockRow(now = now, date = date)
+                ClockStyle.ANALOG -> AnalogClockRow(
+                    now = now,
+                    date = date,
+                    time = timeFormat.format(now),
+                )
             }
         }
 
@@ -189,9 +196,15 @@ private fun TwoLineClock(now: Date, date: String, is24h: Boolean, locale: Locale
 
 /** Mostrador ao lado da data — empilhar os dois deixaria o cabeçalho alto demais. */
 @Composable
-private fun AnalogClockRow(now: Date, date: String) {
+private fun AnalogClockRow(now: Date, date: String, time: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        AnalogDial(now = now, size = DIAL_SIZE)
+        // O desenho é o único lugar onde a hora aparece neste estilo: sem esta
+        // descrição, quem usa leitor de tela ouviria só a data.
+        AnalogDial(
+            now = now,
+            size = DIAL_SIZE,
+            modifier = Modifier.semantics { contentDescription = time },
+        )
         Spacer(Modifier.width(16.dp))
         Text(
             text = date,
