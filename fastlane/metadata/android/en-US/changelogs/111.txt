@@ -1,0 +1,5 @@
+1.1.0 — On the wallpaper: the home screen with no surface on top, light or
+dark text picked from the wallpaper, with a shadow; favorites as a vertical
+list; an alphabet index that bends around your finger, shows the letter in a
+bubble and filters the list to that letter; the search field hidden until
+you swipe up; Nunito font. All adjustable under Appearance.

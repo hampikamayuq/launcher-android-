@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.0 — Fase 10: sobre o papel de parede
+
+- Tela inicial sem superfície por cima (opacidade padrão 0): a tinta do
+  texto é escolhida pelo papel de parede (automático pelo
+  `HINT_SUPPORTS_DARK_TEXT` do sistema, ou claro/escuro à mão), com sombra em
+  toda a tipografia; a cor de destaque ganha piso de luminância para não
+  sumir em fundo escuro. Telas com fundo próprio (configurações, seletor de
+  widgets, boas-vindas, folhas e diálogos, cartão da calculadora) mantêm a
+  paleta normal.
+- Favoritos em lista vertical, como as linhas da gaveta, reordenáveis por
+  toque longo e arraste; toque longo parado abre o menu do app. A linha
+  horizontal continua como opção.
+- Índice alfabético em onda: as letras se curvam ao redor do dedo, a letra
+  sob ele vira uma bolha e a lista mostra só a seção daquela letra. Voltar,
+  rolar, digitar ou tocar na estrela do topo devolve a tela inicial. O
+  índice reto continua como opção.
+- Campo de busca escondido até o gesto de subir (ou sempre visível, por
+  opção).
+- Fonte Nunito (SIL OFL) embutida e usada por padrão.
+- Cinco preferências novas em Aparência; `.cascata-theme` e backups
+  anteriores continuam válidos.
+- Screenshots da loja regeradas com o visual novo (a imagem 2 mostra o
+  índice em onda). 248 testes de unidade por edição.
+
 ## 1.0.0 — Fase 9: publicação
 
 - Nove fases do plano fechadas; código, documentação e CI prontos para

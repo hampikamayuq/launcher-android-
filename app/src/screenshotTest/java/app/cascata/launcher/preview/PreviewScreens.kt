@@ -24,12 +24,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
@@ -45,11 +47,14 @@ import app.cascata.launcher.data.theme.ClockStyle
 import app.cascata.launcher.data.theme.ColorSource
 import app.cascata.launcher.data.theme.DarkMode
 import app.cascata.launcher.data.theme.Density
+import app.cascata.launcher.data.theme.FavoritesStyle
+import app.cascata.launcher.data.theme.IndexStyle
 import app.cascata.launcher.data.theme.ThemeSettings
+import app.cascata.launcher.data.theme.WallpaperText
 import app.cascata.launcher.settings.AppearanceSection
 import app.cascata.launcher.ui.AlphabetIndex
 import app.cascata.launcher.ui.AppRow
-import app.cascata.launcher.ui.FavoritesRow
+import app.cascata.launcher.ui.FavoritesList
 import app.cascata.launcher.ui.SectionHeader
 import app.cascata.launcher.ui.clock.ClockFace
 import app.cascata.launcher.ui.glance.ChipIcon
@@ -59,6 +64,9 @@ import app.cascata.launcher.ui.notifications.NotificationBlock
 import app.cascata.launcher.ui.search.calculationItem
 import app.cascata.launcher.ui.search.searchExtraItems
 import app.cascata.launcher.ui.theme.CascataTheme
+import app.cascata.launcher.ui.theme.LocalOnWallpaper
+import app.cascata.launcher.ui.theme.SurfaceTheme
+import app.cascata.launcher.ui.theme.WALLPAPER_VEIL_ALPHA
 import app.cascata.launcher.ui.usage.UsageSheetContent
 import app.cascata.launcher.SearchExtras
 import app.cascata.launcher.data.search.SearchEngine
@@ -66,7 +74,7 @@ import app.cascata.launcher.data.search.SystemSettingsIndex
 
 /**
  * As telas das imagens da loja. Cada uma monta a home (ou a folha) com os
- * composables de verdade — `AppRow`, `FavoritesRow`, `AlphabetIndex`,
+ * composables de verdade — `AppRow`, `FavoritesList`, `AlphabetIndex`,
  * `NotificationInline`, `UsageSheetContent`, `AppearanceSection` — sobre dados
  * fictícios. O que não dá para renderizar fora do aparelho (LauncherApps,
  * AppWidgetHost, sessões de mídia) fica de fora ou entra como ícone fictício.
@@ -81,31 +89,59 @@ private val INDEX_WIDTH = 28.dp
 /** Espaço do topo no lugar da barra de status, que a prévia não desenha. */
 private val TOP_INSET = 28.dp
 
-/** O tema das prévias: cor de destaque escolhida, e superfície opaca (sem papel de parede por baixo). */
+/**
+ * O tema das prévias. Por padrão é o da home: superfície transparente, texto
+ * claro com sombra, como fica sobre um papel de parede escuro. [overWallpaper]
+ * falso é para as telas que têm fundo próprio e opaco — as configurações.
+ */
 @Composable
 internal fun PreviewTheme(
     dark: Boolean,
     settings: ThemeSettings = previewSettings(dark),
+    overWallpaper: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    CascataTheme(settings = settings, content = content)
+    CascataTheme(settings = settings, overWallpaper = overWallpaper, content = content)
 }
 
-/** Aparência das prévias: cor escolhida a dedo e superfície opaca (não há papel de parede). */
+/**
+ * Aparência das prévias: cor de destaque escolhida a dedo e a home sobre o
+ * papel de parede, que é como ela nasce. Não há papel de parede nenhum aqui —
+ * quem faz o papel dele é o gradiente de [Screen] —, então a tinta do texto é
+ * fixada em clara em vez de perguntar ao sistema.
+ */
 internal fun previewSettings(dark: Boolean): ThemeSettings = ThemeSettings(
     darkMode = if (dark) DarkMode.DARK else DarkMode.LIGHT,
     colorSource = ColorSource.ACCENT,
-    backgroundOpacity = 1f,
+    backgroundOpacity = 0f,
     clockStyle = ClockStyle.BASIC,
+    favoritesStyle = FavoritesStyle.LIST,
+    indexStyle = IndexStyle.WAVE,
+    wallpaperText = WallpaperText.LIGHT,
 )
 
-/** Fundo da tela inteira, na cor da superfície do tema. */
+/**
+ * O papel de parede das fotos: um degradê azul-acinzentado, mar ao anoitecer.
+ * Fora do aparelho não há papel de parede, e sem nada por baixo as imagens não
+ * mostrariam o que a home virou — texto claro com sombra, direto sobre a foto.
+ */
+private val DUSK = Brush.verticalGradient(
+    listOf(Color(0xFF0A111C), Color(0xFF16273A), Color(0xFF32516D)),
+)
+
+/** Fundo da tela inteira: o degradê, ou a superfície do tema nas telas opacas. */
 @Composable
-private fun Screen(content: @Composable BoxScope.() -> Unit) {
+private fun Screen(opaque: Boolean = false, content: @Composable BoxScope.() -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .then(
+                if (opaque) {
+                    Modifier.background(MaterialTheme.colorScheme.surface)
+                } else {
+                    Modifier.background(DUSK)
+                }
+            ),
         content = content,
     )
 }
@@ -168,11 +204,20 @@ private fun GlanceChips(demo: Demo) {
 /** O campo de busca da home, com o texto que a prévia quiser mostrar. */
 @Composable
 private fun SearchField(query: String) {
+    val veil = MaterialTheme.colorScheme.surface.copy(alpha = WALLPAPER_VEIL_ALPHA)
     OutlinedTextField(
         value = query,
         onValueChange = {},
         singleLine = true,
         shape = RoundedCornerShape(28.dp),
+        colors = if (LocalOnWallpaper.current) {
+            OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = veil,
+                unfocusedContainerColor = veil,
+            )
+        } else {
+            OutlinedTextFieldDefaults.colors()
+        },
         placeholder = { Text(stringResource(R.string.search_hint)) },
         trailingIcon = {
             if (query.isNotEmpty()) {
@@ -218,7 +263,10 @@ private fun AppList(
     }
 }
 
-/** (a) Tela inicial: relógio, cards do glance, favoritos e o começo da gaveta. */
+/**
+ * (a) Tela inicial: relógio, cards do glance, favoritos em lista e o começo da
+ * gaveta. Não há campo de busca — ele só aparece no gesto de subir.
+ */
 @Composable
 internal fun HomePreview(dark: Boolean) {
     val demo = demo()
@@ -231,20 +279,24 @@ internal fun HomePreview(dark: Boolean) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = SIDE).padding(top = TOP_INSET)) {
                 ClockRow()
                 GlanceChips(demo)
-                SearchField("")
-                FavoritesRow(
-                    favorites = favorites,
-                    repository = DemoIcons,
-                    onLaunch = {},
-                    onMoveFavorite = { _, _ -> },
-                )
                 Box(modifier = Modifier.fillMaxSize()) {
                     Column(modifier = Modifier.fillMaxSize().padding(end = INDEX_WIDTH)) {
-                        AppList(rows.take(14))
+                        // Como na home: os favoritos são as primeiras linhas da
+                        // lista, e as seções vêm logo depois.
+                        FavoritesList(
+                            favorites = favorites,
+                            repository = DemoIcons,
+                            onLaunch = {},
+                            onMoveFavorite = { _, _ -> },
+                            onLongPress = {},
+                        )
+                        AppList(rows.take(9))
                     }
                     AlphabetIndex(
                         letters = demoLetters(apps),
                         onLetterFocused = {},
+                        onHome = {},
+                        style = IndexStyle.WAVE,
                         modifier = Modifier.align(Alignment.CenterEnd),
                     )
                 }
@@ -253,7 +305,10 @@ internal fun HomePreview(dark: Boolean) {
     }
 }
 
-/** (b) A gaveta inteira, com o índice alfabético do lado. */
+/**
+ * (b) O índice em onda em uso: o dedo parado numa letra, a coluna curvada ao
+ * redor dele, a bolha repetindo a letra e a lista reduzida àquela seção.
+ */
 @Composable
 internal fun DrawerPreview(dark: Boolean) {
     val demo = demo()
@@ -263,14 +318,18 @@ internal fun DrawerPreview(dark: Boolean) {
     PreviewTheme(dark) {
         Screen {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = SIDE).padding(top = TOP_INSET)) {
-                SearchField("")
+                ClockRow()
+                GlanceChips(demo)
                 Box(modifier = Modifier.fillMaxSize()) {
                     Column(modifier = Modifier.fillMaxSize().padding(end = INDEX_WIDTH)) {
-                        AppList(rows)
+                        AppList(demoSection(rows, PEEK_LETTER))
                     }
                     AlphabetIndex(
                         letters = demoLetters(apps),
                         onLetterFocused = {},
+                        onHome = {},
+                        style = IndexStyle.WAVE,
+                        previewLetter = PEEK_LETTER,
                         modifier = Modifier.align(Alignment.CenterEnd),
                     )
                 }
@@ -333,7 +392,7 @@ internal fun NotificationsPreview(dark: Boolean) {
     PreviewTheme(dark) {
         Screen {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = SIDE).padding(top = TOP_INSET)) {
-                SearchField("")
+                ClockRow()
                 Box(modifier = Modifier.fillMaxSize()) {
                     Column(modifier = Modifier.fillMaxSize().padding(end = INDEX_WIDTH)) {
                         AppList(
@@ -356,6 +415,8 @@ internal fun NotificationsPreview(dark: Boolean) {
                     AlphabetIndex(
                         letters = demoLetters(apps),
                         onLetterFocused = {},
+                        onHome = {},
+                        style = IndexStyle.WAVE,
                         modifier = Modifier.align(Alignment.CenterEnd),
                     )
                 }
@@ -378,37 +439,41 @@ internal fun UsagePreview(dark: Boolean) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = SIDE).padding(top = TOP_INSET)) {
                 ClockRow()
                 GlanceChips(demo)
-                SearchField("")
-                FavoritesRow(
+                FavoritesList(
                     favorites = demo.favorites.map(::demoEntry),
                     repository = DemoIcons,
                     onLaunch = {},
                     onMoveFavorite = { _, _ -> },
+                    onLongPress = {},
                 )
-                AppList(demoRows(demo.apps.map(::demoEntry), demo.favorites.toSet()).take(6))
+                AppList(demoRows(demo.apps.map(::demoEntry), demo.favorites.toSet()).take(4))
             }
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
-            Surface(
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .padding(vertical = 12.dp)
-                            .align(Alignment.CenterHorizontally)
-                            .size(width = 32.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant),
-                    )
-                    UsageSheetContent(
-                        usage = usage,
-                        apps = apps,
-                        limits = limits,
-                        repository = DemoIcons,
-                        onEdit = {},
-                    )
+            // A folha tem superfície própria: `SurfaceTheme` desfaz nela a tinta
+            // e a sombra de wallpaper, como a home faz com as folhas de verdade.
+            SurfaceTheme {
+                Surface(
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .padding(vertical = 12.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .size(width = 32.dp, height = 4.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant),
+                        )
+                        UsageSheetContent(
+                            usage = usage,
+                            apps = apps,
+                            limits = limits,
+                            repository = DemoIcons,
+                            onEdit = {},
+                        )
+                    }
                 }
             }
         }
@@ -422,8 +487,8 @@ internal fun AppearancePreview(dark: Boolean) {
     // não anunciam uma coisa e desenham outra. A escala fica em 1, que é onde os
     // rótulos dos botões segmentados cabem em todos os três idiomas.
     val shown = previewSettings(dark).copy(backgroundOpacity = 0.55f, density = Density.COMFORTABLE)
-    PreviewTheme(dark, settings = shown) {
-        Screen {
+    PreviewTheme(dark, settings = shown, overWallpaper = false) {
+        Screen(opaque = true) {
             Column(modifier = Modifier.fillMaxSize().padding(top = TOP_INSET)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

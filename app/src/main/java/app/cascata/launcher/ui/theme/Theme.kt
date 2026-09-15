@@ -73,6 +73,21 @@ val LocalOnWallpaper = staticCompositionLocalOf { false }
  */
 const val ON_WALLPAPER_MAX_OPACITY = 0.25f
 
+/**
+ * Alfa do véu que separa um controle do papel de parede — os chips do glance, o
+ * campo de busca. Pouco o bastante para a foto continuar aparecendo, o bastante
+ * para o texto não disputar com ela.
+ */
+const val WALLPAPER_VEIL_ALPHA = 0.35f
+
+/**
+ * O esquema e a tipografia de antes da tinta de wallpaper, guardados para o que
+ * tem superfície própria. Nulos fora de um [CascataTheme] — aí vale o que o
+ * [MaterialTheme] já diz.
+ */
+val LocalSurfaceScheme = staticCompositionLocalOf<ColorScheme?> { null }
+val LocalSurfaceTypography = staticCompositionLocalOf<Typography?> { null }
+
 /** Tinta escura de wallpaper — a mesma `onSurface` do tema claro. */
 private val WallpaperDarkInk = Color(0xFF14181F)
 
@@ -149,11 +164,14 @@ fun CascataTheme(
     val scheme = if (onWallpaper) colors.onWallpaper(darkInk) else colors
 
     val family = remember(settings.fontId, customFont) { Fonts.family(settings.fontId, customFont) }
+    // A tipografia da superfície é a mesma, sem a sombra: ela existe para
+    // descolar o texto da foto, e dentro de uma folha opaca só suja as letras.
+    val surfaceTypography = remember(family) {
+        if (family == null) Typography() else Typography().withFamily(family)
+    }
     val shadow = if (onWallpaper && settings.textShadow) wallpaperShadow(darkInk) else null
-    val typography = remember(family, shadow) {
-        var typography = if (family == null) Typography() else Typography().withFamily(family)
-        if (shadow != null) typography = typography.withShadow(shadow)
-        typography
+    val typography = remember(surfaceTypography, shadow) {
+        if (shadow == null) surfaceTypography else surfaceTypography.withShadow(shadow)
     }
 
     MaterialTheme(colorScheme = scheme, typography = typography) {
@@ -165,8 +183,34 @@ fun CascataTheme(
             LocalLauncherDensity provides settings.density,
             LocalBackgroundOpacity provides settings.backgroundOpacity,
             LocalOnWallpaper provides onWallpaper,
+            // O par guardado para as folhas e diálogos, que têm superfície própria.
+            LocalSurfaceScheme provides colors,
+            LocalSurfaceTypography provides surfaceTypography,
             content = content,
         )
+    }
+}
+
+/**
+ * O tema de volta ao normal, para o que é desenhado sobre uma superfície opaca:
+ * folhas de baixo, diálogos, qualquer janela própria da home.
+ *
+ * Sobre o papel de parede o tema troca `onSurface` por branco (ou pela tinta
+ * escura) e põe sombra em toda a tipografia. Dentro de uma `ModalBottomSheet`,
+ * que desenha o `surfaceContainer` do Material por baixo, isso daria texto
+ * branco sobre superfície clara — ilegível. Aqui o esquema e a tipografia
+ * originais voltam, e [LocalOnWallpaper] volta a ser falso.
+ *
+ * Envolve a folha inteira, não só o conteúdo: o container dela também se pinta
+ * com o esquema. Fora da home é inofensivo — o esquema guardado é o mesmo que
+ * já está valendo.
+ */
+@Composable
+fun SurfaceTheme(content: @Composable () -> Unit) {
+    val scheme = LocalSurfaceScheme.current ?: MaterialTheme.colorScheme
+    val typography = LocalSurfaceTypography.current ?: MaterialTheme.typography
+    MaterialTheme(colorScheme = scheme, typography = typography) {
+        CompositionLocalProvider(LocalOnWallpaper provides false, content = content)
     }
 }
 
@@ -212,10 +256,12 @@ private fun SchemeColors.toColorScheme(dark: Boolean): ColorScheme = if (dark) {
 /**
  * O esquema com as tintas de wallpaper no lugar das que dependiam da superfície.
  *
- * Só `onSurface`, `onSurfaceVariant` e `onBackground` mudam: são as três que a
- * home usa para rótulo, cabeçalho de seção e texto secundário, justamente as que
- * ficariam por cima da foto. `surface` e `background` seguem como estão porque
- * quem os desenha já os pinta com a opacidade escolhida (zero, aqui).
+ * Mudam as tintas — `onSurface`, `onSurfaceVariant`, `onBackground` — que a home
+ * usa em rótulo, cabeçalho de seção e texto secundário, e mudam `surface` e
+ * `surfaceVariant`, que não pintam mais fundo nenhum: sobraram como véu
+ * translúcido atrás de um chip ou do campo de busca ([WALLPAPER_VEIL_ALPHA]), e
+ * um véu claro atrás de texto claro não separa coisa alguma. Por isso os dois
+ * acompanham a tinta, e não o modo claro/escuro do tema.
  *
  * `primary` fica com a cor do usuário — trocá-la apagaria a escolha de cor de
  * destaque. O que se garante é o piso de contraste: com texto claro, uma
@@ -229,11 +275,19 @@ private fun ColorScheme.onWallpaper(darkInk: Boolean): ColorScheme {
     // O texto secundário perde alfa em vez de ganhar cinza: o cinza é calculado
     // contra uma superfície, e aqui por baixo não há superfície nenhuma.
     val inkVariant = ink.copy(alpha = if (darkInk) 0.80f else 0.85f)
+    val accent = if (darkInk) primary else primary.readableOnDarkBackdrop(primaryContainer)
     return copy(
         onSurface = ink,
         onSurfaceVariant = inkVariant,
         onBackground = ink,
-        primary = if (darkInk) primary else primary.readableOnDarkBackdrop(primaryContainer),
+        surface = if (darkInk) Color.White else WallpaperDarkInk,
+        surfaceVariant = if (darkInk) LightColors.surfaceVariant else DarkColors.surfaceVariant,
+        primary = accent,
+        // A tinta de cima acompanha: se a primária teve de clarear para não
+        // sumir no fundo, o `onPrimary` calculado para a cor de antes (branco,
+        // quase sempre) já não contrasta com ela. Clara o bastante para passar
+        // de [MIN_ACCENT_LUMINANCE], ela só aceita tinta escura por cima.
+        onPrimary = if (accent == primary) onPrimary else WallpaperDarkInk,
     )
 }
 

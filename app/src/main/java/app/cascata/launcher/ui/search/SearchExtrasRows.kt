@@ -64,6 +64,7 @@ import app.cascata.launcher.data.search.CalculationResult
 import app.cascata.launcher.data.search.Contact
 import app.cascata.launcher.data.search.SettingEntry
 import app.cascata.launcher.ui.ShortcutIcon
+import app.cascata.launcher.ui.theme.SurfaceTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -202,55 +203,59 @@ private fun CalculationCard(result: CalculationResult) {
         copied = false
     }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable(role = Role.Button) {
-                // A API nova é suspensa: copiar sai do caminho do toque.
-                scope.launch {
-                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("cascata", result.formatted)))
-                }
-                copied = true
-            }
-            .semantics(mergeDescendants = true) { contentDescription = description },
-    ) {
-        Column(
+    // O cartão tem superfície própria e opaca: sem isto, sobre o papel de
+    // parede, o resultado sairia em tinta clara por cima dela.
+    SurfaceTheme {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(vertical = 4.dp)
+                .clickable(role = Role.Button) {
+                    // A API nova é suspensa: copiar sai do caminho do toque.
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("cascata", result.formatted)))
+                    }
+                    copied = true
+                }
+                .semantics(mergeDescendants = true) { contentDescription = description },
         ) {
-            Text(
-                text = result.expression,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.align(Alignment.End),
-            )
-            Text(
-                text = result.formatted,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.align(Alignment.End),
-            )
-            if (copied) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
                 Text(
-                    text = stringResource(R.string.search_copied),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    // Aparece sozinho depois do toque e some sozinho: sem região
-                    // viva o leitor de tela nunca saberia que a cópia aconteceu.
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        // Nó próprio: dentro do nó do card ele seria absorvido
-                        // pela descrição do resultado e nunca seria anunciado.
-                        .semantics(mergeDescendants = true) {
-                            liveRegion = LiveRegionMode.Polite
-                        },
+                    text = result.expression,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.End),
                 )
+                Text(
+                    text = result.formatted,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.End),
+                )
+                if (copied) {
+                    Text(
+                        text = stringResource(R.string.search_copied),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        // Aparece sozinho depois do toque e some sozinho: sem região
+                        // viva o leitor de tela nunca saberia que a cópia aconteceu.
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            // Nó próprio: dentro do nó do card ele seria absorvido
+                            // pela descrição do resultado e nunca seria anunciado.
+                            .semantics(mergeDescendants = true) {
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                    )
+                }
             }
         }
     }

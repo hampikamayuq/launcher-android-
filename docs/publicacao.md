@@ -1,4 +1,4 @@
-# Publicação — checklist da 1.0
+# Publicação — checklist da 1.x
 
 Três vias de distribuição, nessa ordem: GitHub Releases (já existe, é só
 cortar a tag), F-Droid (falta submeter) e Play Store (opcional, sem prazo).
@@ -6,7 +6,7 @@ As três publicam o mesmo código-fonte; o que muda é o processo em volta.
 
 ## a. GitHub Releases
 
-Já funciona desde a Fase 1 — a 1.0 só precisa da tag.
+Já funciona desde a Fase 1 — a 1.1 só precisa da tag.
 
 1. **Keystore e secrets.** Chave própria gerada com
    `./scripts/make-keystore.sh`, guardada fora do repositório; os quatro
@@ -14,18 +14,18 @@ Já funciona desde a Fase 1 — a 1.0 só precisa da tag.
    `KEY_PASSWORD`) configurados em Settings → Secrets do repositório. Passo a
    passo completo em [`docs/release.md`](release.md) — não repetido aqui.
 2. **Tag.** Atualizar `versionCode`/`versionName` em `app/build.gradle.kts`
-   para `10` / `1.0.0`, commitar, e:
+   para `11` / `1.1.0`, commitar, e:
 
    ```bash
-   git tag -a v1.0.0 -m "Cascata 1.0.0"
-   git push origin v1.0.0
+   git tag -a v1.1.0 -m "Cascata 1.1.0"
+   git push origin v1.1.0
    ```
 
-3. **O que `release.yml` produz.** Ao ver a tag `v1.0.0`: confere que ela bate
+3. **O que `release.yml` produz.** Ao ver a tag `v1.1.0`: confere que ela bate
    com o `versionName`; roda testes e lint das duas edições, nas duas
    variantes `Release`; compila `assembleRelease` (as duas edições); confere
    a assinatura de cada APK com `apksigner verify --print-certs`; renomeia
-   para `Cascata-v1.0.0-lite.apk` e `Cascata-v1.0.0-full.apk`, cada um com seu
+   para `Cascata-v1.1.0-lite.apk` e `Cascata-v1.1.0-full.apk`, cada um com seu
    `.sha256`; publica a GitHub Release da tag com os quatro arquivos e notas
    automáticas.
 
@@ -72,9 +72,9 @@ empurrada.
    Repo: https://github.com/hampikamayuq/launcher-android-.git
 
    Builds:
-     - versionName: "1.0.0"
+     - versionName: "1.1.0"
        versionCode: 10
-       commit: v1.0.0
+       commit: v1.1.0
        subdir: app
        gradle:
          - lite
@@ -82,7 +82,7 @@ empurrada.
 
    AutoUpdateMode: Version v%v
    UpdateCheckMode: Tags
-   CurrentVersion: "1.0.0"
+   CurrentVersion: "1.1.0"
    CurrentVersionCode: 10
    ```
 
@@ -149,12 +149,15 @@ manual, do lado da Google, fora do nosso controle).
 
 As seis imagens da ficha, nos três idiomas, estão em
 `fastlane/metadata/android/{pt-BR,en-US,es-ES}/images/phoneScreenshots/1.png … 6.png`
-(1080x2400, 440 dpi — a resolução que F-Droid e Play aceitam para telefone):
+(1080x2400, 440 dpi — a resolução que F-Droid e Play aceitam para telefone).
+Como não há papel de parede fora do aparelho, as prévias da home desenham um
+degradê azul-acinzentado no lugar dele: é o que mostra a tela como ela fica,
+com o texto claro e a sombra por baixo:
 
 | # | Tela | Tema |
 |---|------|------|
-| 1 | Início: relógio, cards do *at a glance*, favoritos e o começo da gaveta | claro |
-| 2 | Gaveta inteira com o índice alfabético | escuro |
+| 1 | Início: relógio, cards do *at a glance*, favoritos em lista e o começo da gaveta | claro |
+| 2 | Índice em onda: a gaveta reduzida à letra sob o dedo, com a bolha | escuro |
 | 3 | Busca: conta, contatos e telas do sistema | claro |
 | 4 | Notificações abertas embaixo da linha do app | escuro |
 | 5 | Uso do dia e limites por app | claro |
@@ -197,13 +200,13 @@ outra, e é o caso em que regerar é a resposta certa.
 
 ## Nota sobre `versionCode` por edição
 
-Desde a 1.0.0 cada edição tem o seu `versionCode`: `base * 10 + 1` para a
-`lite` e `base * 10 + 2` para a `full` (1.0.0 = base 10 → **101** e **102**).
+Desde a 1.1.0 cada edição tem o seu `versionCode`: `base * 10 + 1` para a
+`lite` e `base * 10 + 2` para a `full` (1.1.0 = base 10 → **101** e **102**).
 Assim F-Droid e Play distinguem os dois builds do mesmo pacote, e uma
 atualização de `lite` para `full` (102 > 101) é aceita pelo sistema; o caminho
 inverso (`full` → `lite`) exige desinstalar, porque é um downgrade de código.
 Os changelogs do `fastlane` seguem o código da edição publicada no F-Droid, a
-`lite` (`changelogs/101.txt` para a 1.0.0; `9.txt` é a 0.9.0, anterior ao esquema).
+`lite` (`changelogs/101.txt` para a 1.1.0; `9.txt` é a 0.9.0, anterior ao esquema).
 
 ## Build reproduzível
 
@@ -228,10 +231,10 @@ builds do CI em commits iguais produzem o mesmo resultado.
 
 ```bash
 # 1. A assinatura é válida e usa a chave esperada
-$ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs Cascata-v1.0.0-lite.apk
+$ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs Cascata-v1.1.0-lite.apk
 
 # 2. Hash bruto — ponto de partida, não prova final
-sha256sum Cascata-v1.0.0-lite.apk build/outputs/apk/lite/release/app-lite-release.apk
+sha256sum Cascata-v1.1.0-lite.apk build/outputs/apk/lite/release/app-lite-release.apk
 ```
 
 **O hash bruto pode divergir mesmo entre builds idênticas no código-fonte.**
@@ -244,12 +247,12 @@ prova que a comparação certa é outra:
 
 ```bash
 # 3. Comparar o conteúdo, não o arquivo assinado
-unzip -l Cascata-v1.0.0-lite.apk > /tmp/a.txt
+unzip -l Cascata-v1.1.0-lite.apk > /tmp/a.txt
 unzip -l build/outputs/apk/lite/release/app-lite-release.apk > /tmp/b.txt
 diff /tmp/a.txt /tmp/b.txt
 
 # 4. Diferença completa, ignorando o que é só empacotamento
-diffoscope Cascata-v1.0.0-lite.apk build/outputs/apk/lite/release/app-lite-release.apk
+diffoscope Cascata-v1.1.0-lite.apk build/outputs/apk/lite/release/app-lite-release.apk
 ```
 
 `unzip -l` já basta para conferir nomes, tamanhos e CRC de cada entrada —

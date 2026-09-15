@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.IconSource
+import app.cascata.launcher.ui.theme.SurfaceTheme
 
 private val HIDDEN_ICON = 36.dp
 
@@ -37,43 +38,45 @@ fun HiddenAppsSheet(
     onUnhide: (AppEntry) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(
-            text = stringResource(R.string.hidden_apps),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .semantics { heading() }
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-        )
-        LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
-            items(count = hidden.size, key = { hidden[it].key }) { index ->
-                val entry = hidden[index]
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // Ícone e nome são uma parada só; o botão tem a sua.
-                        .semantics(mergeDescendants = true) { }
-                        .padding(horizontal = 24.dp, vertical = 4.dp),
-                ) {
-                    AppIcon(entry = entry, repository = repository, size = HIDDEN_ICON)
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = entry.label,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(onClick = { onUnhide(entry) }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            // "Mostrar na lista" repetido não diz de qual app é.
-                            contentDescription = stringResource(R.string.unhide_app, entry.label),
-                            tint = MaterialTheme.colorScheme.primary,
+    SurfaceTheme {
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Text(
+                text = stringResource(R.string.hidden_apps),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .semantics { heading() }
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+            )
+            LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+                items(count = hidden.size, key = { hidden[it].key }) { index ->
+                    val entry = hidden[index]
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // Ícone e nome são uma parada só; o botão tem a sua.
+                            .semantics(mergeDescendants = true) { }
+                            .padding(horizontal = 24.dp, vertical = 4.dp),
+                    ) {
+                        AppIcon(entry = entry, repository = repository, size = HIDDEN_ICON)
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = entry.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
+                        IconButton(onClick = { onUnhide(entry) }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                // "Mostrar na lista" repetido não diz de qual app é.
+                                contentDescription = stringResource(R.string.unhide_app, entry.label),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }

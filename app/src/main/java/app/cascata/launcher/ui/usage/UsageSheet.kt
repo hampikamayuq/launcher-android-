@@ -34,6 +34,7 @@ import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.data.usage.AppUsage
 import app.cascata.launcher.ui.AppIcon
+import app.cascata.launcher.ui.theme.SurfaceTheme
 
 private val USAGE_ICON = 36.dp
 
@@ -60,14 +61,16 @@ fun UsageSheet(
 ) {
     var editing by remember { mutableStateOf<String?>(null) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        UsageSheetContent(
-            usage = usage,
-            apps = apps,
-            limits = limits,
-            repository = repository,
-            onEdit = { editing = it },
-        )
+    SurfaceTheme {
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            UsageSheetContent(
+                usage = usage,
+                apps = apps,
+                limits = limits,
+                repository = repository,
+                onEdit = { editing = it },
+            )
+        }
     }
 
     editing?.let { packageName ->

@@ -53,6 +53,7 @@ import app.cascata.launcher.PausePrompt
 import app.cascata.launcher.R
 import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.ui.AppIcon
+import app.cascata.launcher.ui.theme.SurfaceTheme
 import kotlinx.coroutines.delay
 
 private val PAUSE_ICON = 48.dp
@@ -96,81 +97,83 @@ fun PauseSheet(
         confirmValueChange = { value -> remaining <= 0 || value != SheetValue.Hidden },
     )
 
-    ModalBottomSheet(
-        // Tocar fora só vale depois da contagem — antes disso, nada acontece.
-        onDismissRequest = { if (remaining <= 0) onDismiss() },
-        sheetState = sheetState,
-    ) {
-        BackHandler { onDismiss() }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
+    SurfaceTheme {
+        ModalBottomSheet(
+            // Tocar fora só vale depois da contagem — antes disso, nada acontece.
+            onDismissRequest = { if (remaining <= 0) onDismiss() },
+            sheetState = sheetState,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                // Ícone e nome são o título da folha: uma parada só, e um cabeçalho.
-                modifier = Modifier.semantics(mergeDescendants = true) { heading() },
+            BackHandler { onDismiss() }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
             ) {
-                AppIcon(entry = prompt.entry, repository = repository, size = PAUSE_ICON)
-                Spacer(Modifier.width(14.dp))
-                Text(
-                    text = prompt.entry.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            val usedMinutes = (prompt.usedTodayMillis / 60_000L).toInt()
-            Text(
-                text = pluralStringResource(R.plurals.usage_pause_used, usedMinutes, usedMinutes) +
-                    " " +
-                    pluralStringResource(
-                        R.plurals.usage_pause_limit,
-                        prompt.limitMinutes,
-                        prompt.limitMinutes,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(Modifier.height(24.dp))
-            BreathingCircle()
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                text = pluralStringResource(R.plurals.usage_pause_countdown, remaining, remaining),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
-                // A contagem muda sozinha: o leitor de tela precisa ser avisado.
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            LinearProgressIndicator(
-                progress = { (total - remaining).toFloat() / total },
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.action_back))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    // Ícone e nome são o título da folha: uma parada só, e um cabeçalho.
+                    modifier = Modifier.semantics(mergeDescendants = true) { heading() },
+                ) {
+                    AppIcon(entry = prompt.entry, repository = repository, size = PAUSE_ICON)
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = prompt.entry.label,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-                Button(onClick = onConfirm, enabled = remaining <= 0) {
-                    Text(stringResource(R.string.usage_pause_open))
+
+                Spacer(Modifier.height(12.dp))
+
+                val usedMinutes = (prompt.usedTodayMillis / 60_000L).toInt()
+                Text(
+                    text = pluralStringResource(R.plurals.usage_pause_used, usedMinutes, usedMinutes) +
+                        " " +
+                        pluralStringResource(
+                            R.plurals.usage_pause_limit,
+                            prompt.limitMinutes,
+                            prompt.limitMinutes,
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(24.dp))
+                BreathingCircle()
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text = pluralStringResource(R.plurals.usage_pause_countdown, remaining, remaining),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    // A contagem muda sozinha: o leitor de tela precisa ser avisado.
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                LinearProgressIndicator(
+                    progress = { (total - remaining).toFloat() / total },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.action_back))
+                    }
+                    Button(onClick = onConfirm, enabled = remaining <= 0) {
+                        Text(stringResource(R.string.usage_pause_open))
+                    }
                 }
             }
         }

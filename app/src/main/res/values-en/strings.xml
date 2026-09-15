@@ -6,6 +6,7 @@
     <string name="search_close">Close search</string>
     <string name="search_clear">Clear search</string>
     <string name="favorites">Favorites</string>
+    <string name="app_options">App options</string>
     <string name="pin">Pin to favorites</string>
     <string name="unpin">Remove from favorites</string>
     <string name="app_info">App info</string>
@@ -35,6 +36,7 @@
     <string name="empty_search">No apps for “%1$s”</string>
     <string name="jump_to_letter">Jump to letter %1$s</string>
     <string name="alphabet_index">Alphabet index</string>
+    <string name="index_home">Home</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_back">Back</string>

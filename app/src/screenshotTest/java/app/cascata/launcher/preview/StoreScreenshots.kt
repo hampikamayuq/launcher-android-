@@ -10,8 +10,9 @@ import com.android.tools.screenshot.PreviewTest
  * referência sai do nome da função, e é por ele que `scripts/screenshots.sh`
  * copia cada PNG para `fastlane/metadata/android/<locale>/images/phoneScreenshots/`.
  *
- * A ordem da loja é a dos números: 1 home, 2 gaveta, 3 busca, 4 notificações,
- * 5 uso, 6 aparência. Não renomeie sem ajustar o script.
+ * A ordem da loja é a dos números: 1 home, 2 índice em onda (a gaveta na letra
+ * escolhida, com a bolha), 3 busca, 4 notificações, 5 uso, 6 aparência. Não
+ * renomeie sem ajustar o script.
  *
  * Regerar: `./gradlew :app:updateLiteDebugScreenshotTest && scripts/screenshots.sh`
  * (ver `docs/publicacao.md`).

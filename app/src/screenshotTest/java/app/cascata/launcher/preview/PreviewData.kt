@@ -7,7 +7,9 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Process
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLocale
+import app.cascata.launcher.HomeList
 import app.cascata.launcher.Row
+import app.cascata.launcher.rowsForLetter
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.IconSource
 import app.cascata.launcher.data.LoadedIcon
@@ -56,8 +58,8 @@ internal class DemoNotification(
 private val PT = Demo(
     apps = listOf(
         "Agenda", "Arquivos", "Bloco de Notas", "Calculadora", "Câmera",
-        "Fotos", "Mapas", "Mensagens", "Música", "Navegador",
-        "Podcasts", "Rádio", "Relógio", "Tarefas", "Vídeos",
+        "Fotos", "Mapas", "Mensagens", "Mercado", "Metrô", "Música",
+        "Navegador", "Podcasts", "Rádio", "Relógio", "Tarefas", "Vídeos",
     ),
     favorites = listOf("Mensagens", "Navegador", "Câmera", "Música", "Agenda"),
     searchQuery = "12*7",
@@ -88,8 +90,8 @@ private val PT = Demo(
 private val EN = Demo(
     apps = listOf(
         "Browser", "Calculator", "Calendar", "Camera", "Clock",
-        "Files", "Maps", "Messages", "Music", "Notepad",
-        "Photos", "Podcasts", "Radio", "Tasks", "Videos",
+        "Files", "Maps", "Market", "Messages", "Metro", "Music",
+        "Notepad", "Photos", "Podcasts", "Radio", "Tasks", "Videos",
     ),
     favorites = listOf("Messages", "Browser", "Camera", "Music", "Calendar"),
     searchQuery = "12*7",
@@ -120,8 +122,8 @@ private val EN = Demo(
 private val ES = Demo(
     apps = listOf(
         "Agenda", "Archivos", "Bloc de Notas", "Calculadora", "Cámara",
-        "Fotos", "Mapas", "Mensajes", "Música", "Navegador",
-        "Pódcasts", "Radio", "Reloj", "Tareas", "Vídeos",
+        "Fotos", "Mapas", "Mensajes", "Mercado", "Metro", "Música",
+        "Navegador", "Pódcasts", "Radio", "Reloj", "Tareas", "Vídeos",
     ),
     favorites = listOf("Mensajes", "Navegador", "Cámara", "Música", "Agenda"),
     searchQuery = "12*7",
@@ -190,6 +192,23 @@ internal fun demoRows(apps: List<AppEntry>, favorites: Set<String>): List<Row<Ap
 
 /** As letras do índice lateral, na ordem das seções. */
 internal fun demoLetters(apps: List<AppEntry>): List<Char> = apps.map { it.section }.distinct()
+
+/**
+ * A letra que a foto do índice em onda mostra escolhida. É M nos três idiomas —
+ * mapas, mensagens e música — então a mesma imagem vale para todos.
+ */
+internal const val PEEK_LETTER = 'M'
+
+/**
+ * A seção de uma letra, como a home a monta quando o dedo para no índice: pela
+ * mesma função pura do app, para a foto não mostrar um recorte que o app não faz.
+ */
+internal fun demoSection(rows: List<Row<AppEntry>>, letter: Char): List<Row<AppEntry>> {
+    val sections = rows.withIndex()
+        .mapNotNull { (index, row) -> (row as? Row.Header)?.let { it.letter to index } }
+        .toMap()
+    return HomeList(rows = rows, sectionIndex = sections).rowsForLetter(letter)
+}
 
 internal fun demoNotifications(demo: Demo): List<AppNotification> {
     val now = System.currentTimeMillis()

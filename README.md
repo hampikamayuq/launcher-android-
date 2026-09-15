@@ -19,16 +19,17 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
   `applicationId` nas duas — instala-se uma ou outra, nunca as duas juntas.
 - Onde baixar: [GitHub Releases](https://github.com/hampikamayuq/launcher-android-/releases),
   dois APKs por tag (`Cascata-vX.Y.Z-lite.apk` e `-full.apk`), cada um com seu
-  `.sha256`. A versão 1.0 sai assim que a tag `v1.0.0` for criada — antes
+  `.sha256`. A versão 1.1 sai assim que a tag `v1.1.0` for criada — antes
   disso, a lista de releases mostra as versões anteriores.
 
 **Privacidade:** o app não coleta nem envia dados — detalhes e como conferir
 em [`docs/privacidade.md`](docs/privacidade.md).
 
-## Estado atual (v1.0.0 — as nove fases concluídas)
+## Estado atual (v1.1.0 — nove fases do plano e a Fase 10)
 
 | | |
 |---|---|
+| Tela inicial sobre o papel de parede: tinta pelo wallpaper com sombra, favoritos em lista, índice em onda com bolha e filtro por letra, busca escondida até o gesto, fonte Nunito | ✅ |
 | Backup em arquivo (`.cascata-backup`) com restauração entre aparelhos e "apagar tudo" | ✅ |
 | Onboarding de três telas; pt-BR, en e es; acessibilidade revisada para TalkBack | ✅ |
 | Baseline Profile por Macrobenchmark (módulo e job de CI) | ✅ |
@@ -64,9 +65,9 @@ em [`docs/privacidade.md`](docs/privacidade.md).
 
 ## Tamanho
 
-| | Cascata 1.0.0 `lite` (release, R8 + Baseline Profile) | Cascata 1.0.0 `full` (release, R8 + Baseline Profile) | Niagara 1.16.28 |
+| | Cascata 1.1.0 `lite` (release, R8 + Baseline Profile) | Cascata 1.1.0 `full` (release, R8 + Baseline Profile) | Niagara 1.16.28 |
 |---|---|---|---|
-| APK | **2.277.037 bytes** (≈ 2,17 MB) | **2.284.505 bytes** (≈ 2,18 MB) | 13,4 MB |
+| APK | **2.427.721 bytes** (≈ 2,32 MB) | **2.435.189 bytes** (≈ 2,32 MB) | 13,4 MB |
 | Permissões | `ACCESS_HIDDEN_PROFILES`, `READ_CALENDAR`, `READ_CONTACTS`, `PACKAGE_USAGE_STATS`, `BIND_APPWIDGET` (sistema) | as mesmas + `INTERNET`, `ACCESS_COARSE_LOCATION` | 26 |
 
 Todas as permissões listadas são pedidas só ao ligar o recurso correspondente,

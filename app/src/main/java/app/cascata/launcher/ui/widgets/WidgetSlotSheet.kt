@@ -41,6 +41,7 @@ import app.cascata.launcher.data.widgets.PlacedWidget
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetSlot
 import app.cascata.launcher.data.widgets.cellsFor
+import app.cascata.launcher.ui.theme.SurfaceTheme
 
 private val SHEET_PADDING = 24.dp
 
@@ -68,111 +69,113 @@ internal fun WidgetSlotSheet(
     // "Remover" sozinho se repete uma vez por widget da pilha.
     val removeLabels = labels.map { stringResource(R.string.widget_remove_named, it) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(
-            text = stringResource(R.string.widget_slot_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .semantics { heading() }
-                .padding(horizontal = SHEET_PADDING, vertical = 8.dp),
-        )
-
-        val cells = pluralStringResource(R.plurals.widget_cells, slot.heightCells, slot.heightCells)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                // "Altura" e "2 células" são uma parada só; os dois botões,
-                // que já são nós próprios, continuam separados.
-                .semantics(mergeDescendants = true) { }
-                .padding(horizontal = SHEET_PADDING, vertical = 4.dp),
-        ) {
+    SurfaceTheme {
+        ModalBottomSheet(onDismissRequest = onDismiss) {
             Text(
-                text = stringResource(R.string.widget_height),
-                style = MaterialTheme.typography.bodyLarge,
+                text = stringResource(R.string.widget_slot_title),
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .semantics { heading() }
+                    .padding(horizontal = SHEET_PADDING, vertical = 8.dp),
             )
-            // Provedor que não aceita redimensionar na vertical mostra a altura
-            // que tem, sem botões que não fariam nada.
-            if (limits.resizable) {
-                IconButton(
-                    onClick = { actions.onResize(slot.id, slot.heightCells - 1) },
-                    enabled = slot.heightCells > limits.minCells,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.KeyboardArrowDown,
-                        contentDescription = stringResource(R.string.widget_height_decrease),
-                    )
-                }
-            }
-            Text(
-                text = cells,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (limits.resizable) {
-                IconButton(
-                    onClick = { actions.onResize(slot.id, slot.heightCells + 1) },
-                    enabled = slot.heightCells < MAX_CELLS,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.KeyboardArrowUp,
-                        contentDescription = stringResource(R.string.widget_height_increase),
-                    )
-                }
-            }
-        }
 
-        SheetRow(
-            label = stringResource(R.string.widget_move_up),
-            enabled = canMoveUp,
-            onClick = { actions.onMove(slot.id, -1) },
-        )
-        SheetRow(
-            label = stringResource(R.string.widget_move_down),
-            enabled = canMoveDown,
-            onClick = { actions.onMove(slot.id, 1) },
-        )
-        SheetRow(
-            label = stringResource(R.string.widget_add_to_stack),
-            // O seletor já abre sabendo em que slot o escolhido vai cair.
-            onClick = {
-                actions.onAddToSlot(slot.id)
-                onDismiss()
-            },
-        )
-
-        slot.widgets.forEachIndexed { index, _ ->
+            val cells = pluralStringResource(R.plurals.widget_cells, slot.heightCells, slot.heightCells)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = SHEET_PADDING, end = 8.dp, top = 2.dp, bottom = 2.dp),
+                    // "Altura" e "2 células" são uma parada só; os dois botões,
+                    // que já são nós próprios, continuam separados.
+                    .semantics(mergeDescendants = true) { }
+                    .padding(horizontal = SHEET_PADDING, vertical = 4.dp),
             ) {
                 Text(
-                    text = labels[index],
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = stringResource(R.string.widget_height),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.width(8.dp))
-                TextButton(
-                    onClick = { actions.onRemove(slot.widgets[index].appWidgetId) },
-                    // Numa pilha, três botões "Remover" não dizem qual é qual.
-                    modifier = Modifier.semantics {
-                        contentDescription = removeLabels[index]
-                    },
-                ) {
-                    Text(stringResource(R.string.widget_remove))
+                // Provedor que não aceita redimensionar na vertical mostra a altura
+                // que tem, sem botões que não fariam nada.
+                if (limits.resizable) {
+                    IconButton(
+                        onClick = { actions.onResize(slot.id, slot.heightCells - 1) },
+                        enabled = slot.heightCells > limits.minCells,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.KeyboardArrowDown,
+                            contentDescription = stringResource(R.string.widget_height_decrease),
+                        )
+                    }
+                }
+                Text(
+                    text = cells,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (limits.resizable) {
+                    IconButton(
+                        onClick = { actions.onResize(slot.id, slot.heightCells + 1) },
+                        enabled = slot.heightCells < MAX_CELLS,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.KeyboardArrowUp,
+                            contentDescription = stringResource(R.string.widget_height_increase),
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(Modifier.height(32.dp))
+            SheetRow(
+                label = stringResource(R.string.widget_move_up),
+                enabled = canMoveUp,
+                onClick = { actions.onMove(slot.id, -1) },
+            )
+            SheetRow(
+                label = stringResource(R.string.widget_move_down),
+                enabled = canMoveDown,
+                onClick = { actions.onMove(slot.id, 1) },
+            )
+            SheetRow(
+                label = stringResource(R.string.widget_add_to_stack),
+                // O seletor já abre sabendo em que slot o escolhido vai cair.
+                onClick = {
+                    actions.onAddToSlot(slot.id)
+                    onDismiss()
+                },
+            )
+
+            slot.widgets.forEachIndexed { index, _ ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = SHEET_PADDING, end = 8.dp, top = 2.dp, bottom = 2.dp),
+                ) {
+                    Text(
+                        text = labels[index],
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        onClick = { actions.onRemove(slot.widgets[index].appWidgetId) },
+                        // Numa pilha, três botões "Remover" não dizem qual é qual.
+                        modifier = Modifier.semantics {
+                            contentDescription = removeLabels[index]
+                        },
+                    ) {
+                        Text(stringResource(R.string.widget_remove))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+        }
     }
 }
 

@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import app.cascata.launcher.R
+import app.cascata.launcher.ui.theme.SurfaceTheme
 
 /** Mais que isso não é limite diário: 24 h são 1440 minutos. */
 private const val MAX_DIGITS = 4
@@ -36,34 +37,36 @@ fun LimitDialog(
     var text by remember(appLabel) { mutableStateOf(minutes?.toString().orEmpty()) }
     val parsed = text.toIntOrNull()?.takeIf { it > 0 }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(appLabel) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                // Teclado numérico não impede colar letras: o filtro é aqui.
-                onValueChange = { novo -> text = novo.filter { it.isDigit() }.take(MAX_DIGITS) },
-                label = { Text(stringResource(R.string.usage_limit_field)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done,
-                ),
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(parsed) },
-                enabled = parsed != null,
-            ) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onConfirm(null) }) {
-                Text(stringResource(R.string.usage_limit_remove))
-            }
-        },
-    )
+    SurfaceTheme {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(appLabel) },
+            text = {
+                OutlinedTextField(
+                    value = text,
+                    // Teclado numérico não impede colar letras: o filtro é aqui.
+                    onValueChange = { novo -> text = novo.filter { it.isDigit() }.take(MAX_DIGITS) },
+                    label = { Text(stringResource(R.string.usage_limit_field)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { onConfirm(parsed) },
+                    enabled = parsed != null,
+                ) {
+                    Text(stringResource(R.string.action_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onConfirm(null) }) {
+                    Text(stringResource(R.string.usage_limit_remove))
+                }
+            },
+        )
+    }
 }

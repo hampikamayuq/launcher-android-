@@ -83,6 +83,14 @@ data class HomeUiState(
 )
 
 /**
+ * As linhas de uma seção só, para a home que mostra uma letra de cada vez
+ * enquanto o dedo percorre o índice em onda. É a mesma função pura do
+ * [HomeStateBuilder] — aqui só se empresta a ela o par de listas do estado.
+ */
+fun HomeUiState.rowsForLetter(letter: Char): List<Row<AppEntry>> =
+    HomeList(rows = rows, sectionIndex = sectionIndex).rowsForLetter(letter)
+
+/**
  * O que a busca acha além dos apps. Tudo vazio quando a query está em branco;
  * cada campo some sozinho quando a opção correspondente está desligada.
  */

@@ -1,0 +1,5 @@
+1.1.0 — Sobre o papel de parede: a tela inicial sem superfície por cima,
+com texto claro ou escuro escolhido pelo papel de parede e sombra;
+favoritos em lista vertical; índice alfabético que se curva ao redor do
+dedo, com a letra numa bolha e a lista filtrada pela letra; campo de busca
+escondido até o gesto de subir; fonte Nunito. Tudo ajustável em Aparência.

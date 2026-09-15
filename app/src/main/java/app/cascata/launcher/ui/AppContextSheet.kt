@@ -46,6 +46,7 @@ import app.cascata.launcher.HomeViewModel
 import app.cascata.launcher.R
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
+import app.cascata.launcher.ui.theme.SurfaceTheme
 
 private val SHEET_ICON = 48.dp
 private val SHORTCUT_ICON = 32.dp
@@ -84,71 +85,73 @@ fun AppContextSheet(
         shortcuts = if (hasShortcutHost) viewModel.shortcutsFor(entry) else emptyList()
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
-            SheetHeader(entry = entry, repository = repository)
+    SurfaceTheme {
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+                SheetHeader(entry = entry, repository = repository)
 
-            if (shortcuts.isNotEmpty()) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text(
-                    text = stringResource(R.string.shortcuts),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .semantics { heading() }
-                        .padding(horizontal = 24.dp, vertical = 4.dp),
-                )
-                shortcuts.forEach { shortcut ->
-                    ShortcutRow(
-                        shortcut = shortcut,
-                        repository = repository,
-                        onClick = {
-                            repository.startShortcut(shortcut)
-                            onDismiss()
-                        },
+                if (shortcuts.isNotEmpty()) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text(
+                        text = stringResource(R.string.shortcuts),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .semantics { heading() }
+                            .padding(horizontal = 24.dp, vertical = 4.dp),
                     )
+                    shortcuts.forEach { shortcut ->
+                        ShortcutRow(
+                            shortcut = shortcut,
+                            repository = repository,
+                            onClick = {
+                                repository.startShortcut(shortcut)
+                                onDismiss()
+                            },
+                        )
+                    }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                SheetAction(
+                    icon = if (favorite) Icons.Filled.Star else Icons.Outlined.Star,
+                    label = stringResource(if (favorite) R.string.unpin else R.string.pin),
+                    onClick = {
+                        viewModel.onToggleFavorite(entry)
+                        onDismiss()
+                    },
+                )
+                SheetAction(
+                    icon = Icons.Outlined.Edit,
+                    label = stringResource(R.string.rename),
+                    onClick = { renaming = true },
+                )
+                SheetAction(
+                    icon = Icons.Outlined.Close,
+                    label = stringResource(R.string.hide),
+                    onClick = {
+                        viewModel.onHide(entry)
+                        onDismiss()
+                    },
+                )
+                SheetAction(
+                    icon = Icons.Outlined.Info,
+                    label = stringResource(R.string.app_info),
+                    onClick = {
+                        repository.openAppInfo(entry)
+                        onDismiss()
+                    },
+                )
+                SheetAction(
+                    icon = Icons.Outlined.Delete,
+                    label = stringResource(R.string.uninstall),
+                    onClick = {
+                        repository.uninstall(entry)
+                        onDismiss()
+                    },
+                )
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            SheetAction(
-                icon = if (favorite) Icons.Filled.Star else Icons.Outlined.Star,
-                label = stringResource(if (favorite) R.string.unpin else R.string.pin),
-                onClick = {
-                    viewModel.onToggleFavorite(entry)
-                    onDismiss()
-                },
-            )
-            SheetAction(
-                icon = Icons.Outlined.Edit,
-                label = stringResource(R.string.rename),
-                onClick = { renaming = true },
-            )
-            SheetAction(
-                icon = Icons.Outlined.Close,
-                label = stringResource(R.string.hide),
-                onClick = {
-                    viewModel.onHide(entry)
-                    onDismiss()
-                },
-            )
-            SheetAction(
-                icon = Icons.Outlined.Info,
-                label = stringResource(R.string.app_info),
-                onClick = {
-                    repository.openAppInfo(entry)
-                    onDismiss()
-                },
-            )
-            SheetAction(
-                icon = Icons.Outlined.Delete,
-                label = stringResource(R.string.uninstall),
-                onClick = {
-                    repository.uninstall(entry)
-                    onDismiss()
-                },
-            )
         }
     }
 }
@@ -248,36 +251,38 @@ private fun RenameDialog(
 ) {
     var text by remember(entry.key) { mutableStateOf(entry.label) }
 
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.rename)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    singleLine = true,
-                    label = { Text(entry.originalLabel) },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                if (entry.label != entry.originalLabel) {
-                    Spacer(Modifier.height(4.dp))
-                    TextButton(onClick = { onConfirm(null) }) {
-                        Text(stringResource(R.string.rename_reset))
+    SurfaceTheme {
+        AlertDialog(
+            onDismissRequest = onCancel,
+            title = { Text(stringResource(R.string.rename)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        singleLine = true,
+                        label = { Text(entry.originalLabel) },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (entry.label != entry.originalLabel) {
+                        Spacer(Modifier.height(4.dp))
+                        TextButton(onClick = { onConfirm(null) }) {
+                            Text(stringResource(R.string.rename_reset))
+                        }
                     }
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(text) }) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
-    )
+            },
+            confirmButton = {
+                TextButton(onClick = { onConfirm(text) }) {
+                    Text(stringResource(R.string.action_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancel) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
 }

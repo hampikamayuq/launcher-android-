@@ -58,6 +58,8 @@ import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.usage.AppUsage
 import app.cascata.launcher.data.usage.UsageSource
+import app.cascata.launcher.ui.theme.LocalOnWallpaper
+import app.cascata.launcher.ui.theme.WALLPAPER_VEIL_ALPHA
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -141,8 +143,15 @@ internal fun GlanceChip(
     onClick: () -> Unit,
     content: @Composable RowScope.() -> Unit,
 ) {
+    // Sobre o papel de parede o chip é um véu leve na cor da superfície, e não
+    // a `surfaceVariant` quase opaca: ali ela viraria uma mancha na foto.
+    val color = if (LocalOnWallpaper.current) {
+        MaterialTheme.colorScheme.surface.copy(alpha = WALLPAPER_VEIL_ALPHA)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = CHIP_ALPHA)
+    }
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = CHIP_ALPHA),
+        color = color,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         shape = RoundedCornerShape(percent = 50),
     ) {

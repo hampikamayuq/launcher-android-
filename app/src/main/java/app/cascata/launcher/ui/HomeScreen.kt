@@ -1,6 +1,7 @@
 package app.cascata.launcher.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,10 +36,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -54,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cascata.launcher.HomeViewModel
 import app.cascata.launcher.R
 import app.cascata.launcher.Row as UiRow
+import app.cascata.launcher.rowsForLetter
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.IconSource
@@ -65,6 +73,8 @@ import app.cascata.launcher.data.glance.MediaSource
 import app.cascata.launcher.data.glance.weather.WeatherSource
 import app.cascata.launcher.data.notifications.BadgeStyle
 import app.cascata.launcher.data.theme.ClockStyle
+import app.cascata.launcher.data.theme.FavoritesStyle
+import app.cascata.launcher.data.theme.IndexStyle
 import app.cascata.launcher.data.usage.UsageSource
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetLayout
@@ -76,6 +86,8 @@ import app.cascata.launcher.ui.search.calculationItem
 import app.cascata.launcher.ui.search.searchExtraItems
 import app.cascata.launcher.ui.theme.LocalBackgroundOpacity
 import app.cascata.launcher.ui.theme.LocalLauncherDensity
+import app.cascata.launcher.ui.theme.LocalOnWallpaper
+import app.cascata.launcher.ui.theme.WALLPAPER_VEIL_ALPHA
 import app.cascata.launcher.ui.theme.iconSize
 import app.cascata.launcher.ui.theme.rowPadding
 import app.cascata.launcher.ui.usage.PauseSheet
@@ -84,8 +96,13 @@ import app.cascata.launcher.ui.widgets.WidgetActions
 import app.cascata.launcher.ui.widgets.WidgetArea
 import kotlinx.coroutines.launch
 
-private val INDEX_WIDTH = 28.dp
 private val LOCK_SIZE = 14.dp
+
+/**
+ * Quantos quadros esperar pelo campo de busca antes de desistir do foco. Ele
+ * entra por animação, e o `FocusRequester` só existe depois de composto.
+ */
+private const val FOCUS_ATTEMPTS = 10
 
 /**
  * A home inteira. Recebe o ViewModel direto: as ações já são doze, e passá-las
@@ -96,6 +113,10 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     repository: AppRepository,
     clockStyle: ClockStyle,
+    favoritesStyle: FavoritesStyle,
+    indexStyle: IndexStyle,
+    /** Falso: o campo de busca só aparece no gesto de subir ou com busca em curso. */
+    searchBarVisible: Boolean,
     glance: GlanceSettings,
     alarmSource: AlarmSource,
     batterySource: BatterySource,
@@ -130,13 +151,34 @@ fun HomeScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    /** O gesto só foca o campo — que continua visível e tocável o tempo todo. */
-    val openSearch = {
-        runCatching { searchFocus.requestFocus() }
-        keyboard?.show()
-        Unit
-    }
+    // O campo de busca não fica na tela quando ninguém pediu por ele:
+    // `searchOpen` é o pedido do gesto, e volta a falso quando a busca esvazia
+    // e o foco sai. Com `searchBarVisible` ligado ele é fixo, como antes.
+    var searchOpen by remember { mutableStateOf(false) }
+    var searchFocused by remember { mutableStateOf(false) }
+    val searchVisible = searchBarVisible || searchOpen || state.query.isNotEmpty()
+
+    /** O gesto pede o campo; quem o foca é o efeito abaixo, quando ele existir. */
+    val openSearch = { searchOpen = true }
     val swipeUp = rememberSwipeUpToSearch(openSearch)
+
+    // O campo entra por animação: a primeira tentativa de foco cai antes de ele
+    // existir, então insistimos por alguns quadros.
+    LaunchedEffect(searchOpen) {
+        if (!searchOpen) return@LaunchedEffect
+        repeat(FOCUS_ATTEMPTS) {
+            if (runCatching { searchFocus.requestFocus() }.isSuccess) {
+                keyboard?.show()
+                return@LaunchedEffect
+            }
+            withFrameNanos { }
+        }
+    }
+
+    // Busca vazia e sem foco: o campo pode sair de cena de novo.
+    LaunchedEffect(searchFocused, state.query) {
+        if (!searchFocused && state.query.isEmpty()) searchOpen = false
+    }
 
     var contextApp by remember { mutableStateOf<AppEntry?>(null) }
     var showHidden by remember { mutableStateOf(false) }
@@ -171,10 +213,45 @@ fun HomeScreen(
         }
     }
 
-    // Voltar limpa a busca. Sem busca não faz nada: aqui já é a tela inicial.
-    BackHandler(enabled = state.query.isNotEmpty()) {
-        viewModel.onClearQuery()
-        focusManager.clearFocus()
+    // A letra que o índice em onda escolheu: enquanto ela existe, a lista é só
+    // aquela seção — favoritos, widgets e extras da busca ficam de fora. Nulo é
+    // a home inteira. Letra que não existe mais (a lista mudou) cai fora sozinha.
+    var peekLetter by remember { mutableStateOf<Char?>(null) }
+    val peekRows = remember(peekLetter, state.rows) {
+        peekLetter?.let { state.rowsForLetter(it) }?.takeIf { it.isNotEmpty() }
+    }
+    val shownRows = peekRows ?: state.rows
+
+    // Começar a digitar sai do filtro: a busca já é outra lista.
+    LaunchedEffect(state.query) { if (state.query.isNotEmpty()) peekLetter = null }
+
+    // Rolar com o dedo também sai, e a lista inteira volta debaixo dele. Só o
+    // gesto do usuário conta: a rolagem que o próprio filtro dispara, não.
+    val exitPeekOnScroll = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.y != 0f) peekLetter = null
+                return Offset.Zero
+            }
+        }
+    }
+
+    /** A estrela do índice: sair do filtro e voltar ao topo, onde estão os favoritos. */
+    val goHome = {
+        peekLetter = null
+        scope.launch { listState.scrollToItem(0) }
+        Unit
+    }
+
+    // Voltar sai primeiro do filtro, depois limpa a busca. Sem nenhum dos dois
+    // não faz nada: aqui já é a tela inicial.
+    BackHandler(enabled = peekRows != null || state.query.isNotEmpty()) {
+        if (peekRows != null) {
+            peekLetter = null
+        } else {
+            viewModel.onClearQuery()
+            focusManager.clearFocus()
+        }
     }
 
     Box(
@@ -208,47 +285,67 @@ fun HomeScreen(
                 onUsageClick = { showUsage = true },
             )
 
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = viewModel::onQueryChange,
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
-                placeholder = { Text(stringResource(R.string.search_hint)) },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                // A tecla de busca abre o melhor resultado que existir: o
-                // primeiro app, senão o primeiro atalho, senão a web.
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        val app = state.rows.firstNotNullOfOrNull { (it as? UiRow.App)?.entry }
-                        val shortcut = extras.shortcuts.firstOrNull()
-                        when {
-                            app != null -> viewModel.onLaunchRequested(app)
-                            shortcut != null -> viewModel.onOpenShortcut(shortcut)
-                            extras.web != null -> viewModel.onWebSearch()
-                            // Nada para abrir: a query fica onde está.
-                            else -> return@KeyboardActions
-                        }
-                        viewModel.onClearQuery()
-                        focusManager.clearFocus()
-                    },
-                ),
-                trailingIcon = {
-                    if (state.query.isNotEmpty()) {
-                        IconButton(onClick = viewModel::onClearQuery) {
-                            Icon(
-                                imageVector = Icons.Outlined.Close,
-                                contentDescription = stringResource(R.string.search_clear),
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .focusRequester(searchFocus),
-            )
+            // Sobre o papel de parede o campo precisa de um véu próprio: as
+            // bordas do Material contam com uma superfície que aqui não existe.
+            val veil = MaterialTheme.colorScheme.surface.copy(alpha = WALLPAPER_VEIL_ALPHA)
+            val fieldColors = if (LocalOnWallpaper.current) {
+                OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = veil,
+                    unfocusedContainerColor = veil,
+                )
+            } else {
+                OutlinedTextFieldDefaults.colors()
+            }
 
-            if (state.favorites.isNotEmpty() && state.query.isEmpty()) {
+            AnimatedVisibility(visible = searchVisible) {
+                OutlinedTextField(
+                    value = state.query,
+                    onValueChange = viewModel::onQueryChange,
+                    singleLine = true,
+                    shape = RoundedCornerShape(28.dp),
+                    colors = fieldColors,
+                    placeholder = { Text(stringResource(R.string.search_hint)) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    // A tecla de busca abre o melhor resultado que existir: o
+                    // primeiro app, senão o primeiro atalho, senão a web.
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            val app = state.rows.firstNotNullOfOrNull { (it as? UiRow.App)?.entry }
+                            val shortcut = extras.shortcuts.firstOrNull()
+                            when {
+                                app != null -> viewModel.onLaunchRequested(app)
+                                shortcut != null -> viewModel.onOpenShortcut(shortcut)
+                                extras.web != null -> viewModel.onWebSearch()
+                                // Nada para abrir: a query fica onde está.
+                                else -> return@KeyboardActions
+                            }
+                            viewModel.onClearQuery()
+                            focusManager.clearFocus()
+                        },
+                    ),
+                    trailingIcon = {
+                        if (state.query.isNotEmpty()) {
+                            IconButton(onClick = viewModel::onClearQuery) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = stringResource(R.string.search_clear),
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .onFocusChanged { searchFocused = it.isFocused }
+                        .focusRequester(searchFocus),
+                )
+            }
+
+            // Em lista os favoritos são itens da própria `LazyColumn`, para
+            // rolarem junto com a gaveta; aqui em cima só a fileira antiga.
+            if (favoritesStyle == FavoritesStyle.ROW &&
+                state.favorites.isNotEmpty() && state.query.isEmpty() && peekRows == null
+            ) {
                 FavoritesRow(
                     favorites = state.favorites,
                     repository = repository,
@@ -265,17 +362,22 @@ fun HomeScreen(
             val expandedNotifications = mountedAppKey?.let { notifications[it] }.orEmpty()
             val expandedRow = mountedAppKey
                 ?.takeIf { expandedNotifications.isNotEmpty() }
-                ?.let { key -> state.rows.indexOfFirst { it is UiRow.App && it.entry.appKey == key } }
+                ?.let { key -> shownRows.indexOfFirst { it is UiRow.App && it.entry.appKey == key } }
                 ?.takeIf { it >= 0 }
             val notificationItem = expandedRow?.plus(1)
             val rowIndexOf: (Int) -> Int = { item ->
                 if (expandedRow == null || item <= expandedRow) item else item - 1
             }
-            // Os widgets são um item da lista antes de todas as linhas: o índice
-            // dentro do `items` não muda, mas o da LazyColumn inteira anda um.
-            // Durante a busca a lista é só resultado: os widgets voltam quando
-            // a query esvazia, junto com o índice alfabético.
-            val widgetItems = if (widgetLayout.slots.isNotEmpty() && state.query.isEmpty()) 1 else 0
+            // Favoritos e widgets são itens da lista antes de todas as linhas: o
+            // índice dentro do `items` não muda, mas o da LazyColumn inteira
+            // anda um por bloco. Durante a busca — e no modo filtrado — a lista
+            // é só resultado: os dois voltam quando ela volta a ser a gaveta.
+            val homeItems = state.query.isEmpty() && peekRows == null
+            val favoriteItems = if (
+                homeItems && favoritesStyle == FavoritesStyle.LIST && state.favorites.isNotEmpty()
+            ) 1 else 0
+            val widgetItems = if (homeItems && widgetLayout.slots.isNotEmpty()) 1 else 0
+            val leadingItems = favoriteItems + widgetItems
 
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
@@ -283,11 +385,28 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(end = INDEX_WIDTH)
+                        .nestedScroll(exitPeekOnScroll)
                         .nestedScroll(swipeUp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    // Primeiro item, acima das linhas de app: os widgets rolam
-                    // junto com a lista em vez de comerem a altura do cabeçalho.
+                    // Primeiro item de todos: é onde a estrela do índice leva, e
+                    // é por rolar junto com a gaveta que eles não comem altura
+                    // fixa do topo. O bloco inteiro é um item só — o arraste que
+                    // reordena mede a própria linha e não depende do
+                    // espaçamento da LazyColumn, e nenhuma chave se repete.
+                    if (favoriteItems > 0) {
+                        item(key = "favorites", contentType = "favorites") {
+                            FavoritesList(
+                                favorites = state.favorites,
+                                repository = repository,
+                                onLaunch = viewModel::onLaunchRequested,
+                                onMoveFavorite = viewModel::onMoveFavorite,
+                                onLongPress = { contextApp = it },
+                            )
+                        }
+                    }
+
+                    // Logo abaixo dos favoritos e acima das linhas de app.
                     if (widgetItems > 0) {
                         item(key = "widgets", contentType = "widgets") {
                             WidgetArea(
@@ -300,15 +419,18 @@ fun HomeScreen(
 
                     // Antes das linhas de app: quem digitou uma conta quer o
                     // número, não a gaveta.
-                    extras.calculation?.let { calculationItem(it) }
+                    if (peekRows == null) extras.calculation?.let { calculationItem(it) }
 
+                    // As chaves são as mesmas nas duas listas — a filtrada é
+                    // uma fatia da inteira —, e é isso que faz a seção ficar no
+                    // lugar quando o filtro entra e sai.
                     items(
-                        count = state.rows.size + if (expandedRow != null) 1 else 0,
+                        count = shownRows.size + if (expandedRow != null) 1 else 0,
                         key = { index ->
                             if (index == notificationItem) {
                                 "notif-$mountedAppKey"
                             } else {
-                                when (val row = state.rows[rowIndexOf(index)]) {
+                                when (val row = shownRows[rowIndexOf(index)]) {
                                     is UiRow.Header -> "header-${row.letter}"
                                     is UiRow.App -> row.entry.key
                                 }
@@ -317,13 +439,13 @@ fun HomeScreen(
                         contentType = { index ->
                             when {
                                 index == notificationItem -> "notifications"
-                                state.rows[rowIndexOf(index)] is UiRow.Header -> "header"
+                                shownRows[rowIndexOf(index)] is UiRow.Header -> "header"
                                 else -> "app"
                             }
                         },
                     ) { index ->
                         if (index == notificationItem) {
-                            val entry = (state.rows[rowIndexOf(index)] as? UiRow.App)?.entry
+                            val entry = (shownRows[rowIndexOf(index)] as? UiRow.App)?.entry
                             NotificationInline(
                                 appLabel = entry?.label.orEmpty(),
                                 notifications = expandedNotifications,
@@ -339,7 +461,7 @@ fun HomeScreen(
                             )
                             return@items
                         }
-                        when (val row = state.rows[rowIndexOf(index)]) {
+                        when (val row = shownRows[rowIndexOf(index)]) {
                             is UiRow.Header -> SectionHeader(row.letter)
                             is UiRow.App -> AppRow(
                                 entry = row.entry,
@@ -366,19 +488,21 @@ fun HomeScreen(
                     }
 
                     // Depois dos apps: atalhos, contatos, configurações e web.
-                    searchExtraItems(
-                        extras = extras,
-                        repository = repository,
-                        onOpenShortcut = viewModel::onOpenShortcut,
-                        onOpenContact = viewModel::onOpenContact,
-                        onCallContact = viewModel::onCallContact,
-                        onMessageContact = viewModel::onMessageContact,
-                        onOpenSetting = viewModel::onOpenSetting,
-                        onWebSearch = viewModel::onWebSearch,
-                    )
+                    if (peekRows == null) {
+                        searchExtraItems(
+                            extras = extras,
+                            repository = repository,
+                            onOpenShortcut = viewModel::onOpenShortcut,
+                            onOpenContact = viewModel::onOpenContact,
+                            onCallContact = viewModel::onCallContact,
+                            onMessageContact = viewModel::onMessageContact,
+                            onOpenSetting = viewModel::onOpenSetting,
+                            onWebSearch = viewModel::onWebSearch,
+                        )
+                    }
 
                     // Última linha da lista, e só quando há o que mostrar lá dentro.
-                    if (state.hiddenApps.isNotEmpty() && state.query.isEmpty()) {
+                    if (state.hiddenApps.isNotEmpty() && homeItems) {
                         item(key = "hidden-apps", contentType = "hidden") {
                             HiddenAppsEntry(
                                 count = state.hiddenApps.size,
@@ -392,22 +516,32 @@ fun HomeScreen(
                     AlphabetIndex(
                         letters = state.sectionIndex.keys.toList(),
                         onLetterFocused = { letter ->
-                            state.sectionIndex[letter]?.let { index ->
-                                // Índice da linha -> índice do item: a área de
-                                // widgets vale uma posição, e o bloco de
-                                // notificações aberto acima do destino, outra.
-                                val target = index + widgetItems +
-                                    if (expandedRow != null && expandedRow < index) 1 else 0
-                                scope.launch { listState.scrollToItem(target) }
+                            if (indexStyle == IndexStyle.WAVE) {
+                                // Em onda a lista vira a seção da letra, e o
+                                // cabeçalho dela é a primeira linha.
+                                peekLetter = letter
+                                scope.launch { listState.scrollToItem(0) }
+                            } else {
+                                state.sectionIndex[letter]?.let { index ->
+                                    // Índice da linha -> índice do item: os
+                                    // favoritos e os widgets valem uma posição
+                                    // cada, e o bloco de notificações aberto
+                                    // acima do destino, outra.
+                                    val target = index + leadingItems +
+                                        if (expandedRow != null && expandedRow < index) 1 else 0
+                                    scope.launch { listState.scrollToItem(target) }
+                                }
                             }
                         },
+                        onHome = goHome,
+                        style = indexStyle,
                         modifier = Modifier.align(Alignment.CenterEnd),
                     )
                 }
 
                 // A mensagem só sobra quando nenhuma seção achou nada. Se só a
                 // web existe, ela aparece sozinha — buscar lá fora é uma resposta.
-                val nothingFound = state.rows.isEmpty() && extras.calculation == null &&
+                val nothingFound = shownRows.isEmpty() && extras.calculation == null &&
                     extras.shortcuts.isEmpty() && extras.contacts.isEmpty() &&
                     extras.settings.isEmpty() && extras.web == null
                 if (nothingFound && !state.loading && state.query.isNotEmpty()) {

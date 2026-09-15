@@ -1,0 +1,6 @@
+1.1.0 — Sobre el fondo de pantalla: la pantalla de inicio sin superficie
+encima, con texto claro u oscuro elegido según el fondo y con sombra;
+favoritos en lista vertical; índice alfabético que se curva alrededor del
+dedo, muestra la letra en una burbuja y filtra la lista por esa letra; campo
+de búsqueda oculto hasta deslizar hacia arriba; fuente Nunito. Todo ajustable
+en Apariencia.
