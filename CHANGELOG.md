@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.1.1 — Abre mesmo degradado
+
+Correções vindas do primeiro uso em aparelho real, onde a 1.1.0 fechava
+sozinha na abertura sem deixar rastro.
+
+- **Relatório de falha local.** Uma quebra passa a abrir uma tela com o
+  erro e botões de copiar e compartilhar, em vez de o app sumir. O texto
+  fica só no aparelho (`filesDir/ultima-falha.txt`), fora do backup, e
+  pode ser apagado em Configurações → Sobre. A tela roda em processo
+  próprio, sem depender de nada do app, e três travas impedem laço.
+- **Nenhum recurso opcional derruba mais a tela inicial.** A varredura de
+  perfis do aparelho (Secure Folder, trabalho, privado) descarta o perfil
+  que recusar a consulta em vez de matar o processo; o escopo de
+  corrotinas do app ganhou tratamento de exceção; os nove arquivos de
+  preferências tratam leitura corrompida; o serviço de widgets pode
+  faltar; as fontes do topo, o relógio e a leitura do papel de parede
+  falham em silêncio. Falha vira recurso vazio, com aviso no relatório.
+- **Fonte recusada pelo aparelho não quebra mais a composição:** a carga é
+  conferida fora da tela e cai na fonte do sistema.
+- Arraste dos favoritos morria no primeiro movimento (as linhas não tinham
+  identidade própria); índice lateral podia travar ou estourar se a lista
+  de apps mudasse durante o arraste; o gesto de subir não reabria a busca
+  com o campo já em cena.
+- No release, `SourceFile`/`LineNumberTable` preservados: sem isso todo
+  rastro saía sem arquivo nem linha.
+- 283 testes de unidade por edição (eram 248).
+
 ## 1.1.0 — Fase 10: sobre o papel de parede
 
 - Tela inicial sem superfície por cima (opacidade padrão 0): a tinta do

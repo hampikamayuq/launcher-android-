@@ -1,0 +1,5 @@
+1.1.1 — Estabilidade: nenhum recurso opcional derruba mais a tela inicial
+(perfis do aparelho, widgets, cards do topo, preferências corrompidas,
+fonte recusada). Quando algo quebrar, abre uma tela com o erro para
+copiar, em vez de o app sumir — e o relatório nunca sai do aparelho.
+Também: arraste dos favoritos, índice lateral e gesto de busca corrigidos.

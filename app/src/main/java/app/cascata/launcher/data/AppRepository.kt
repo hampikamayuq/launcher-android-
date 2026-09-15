@@ -15,6 +15,7 @@ import android.os.UserManager
 import android.provider.Settings
 import android.util.LruCache
 import androidx.annotation.RequiresApi
+import app.cascata.launcher.crash.degraded
 import app.cascata.launcher.data.iconpack.IconPackRepository
 import app.cascata.launcher.data.theme.ThemePrefs
 import app.cascata.launcher.matchesQuery
@@ -25,6 +26,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -39,6 +41,34 @@ import java.text.Collator
 
 /** No máximo isso de atalhos por app: o menu de contexto não pode virar uma lista. */
 private const val MAX_SHORTCUTS = 6
+
+/** Tag dos avisos deste arquivo — é o caminho mais quente da abertura. */
+private const val TAG = "CascataApps"
+
+/**
+ * Varre os perfis do usuário juntando o que cada um devolve, e **descarta o
+ * perfil que lançar** em vez de perder a varredura inteira.
+ *
+ * É a diferença entre uma home vazia e uma home sem o Secure Folder: num Samsung
+ * convivem o perfil pessoal, o de trabalho, o do Secure Folder e (no Android 15+)
+ * o privado, e consultar um deles pode devolver `SecurityException` — o perfil
+ * está trancado, é administrado, ou o fabricante simplesmente não deixa. Nada
+ * disso aparece num teste de JVM, onde só existe um perfil e ele sempre responde.
+ *
+ * Sem Android nenhum aqui dentro de propósito: assim a regra é testável.
+ */
+internal inline fun <P, T> flatMapProfiles(
+    profiles: List<P>,
+    onFailure: (P, Throwable) -> Unit,
+    load: (P) -> List<T>,
+): List<T> = profiles.flatMap { profile ->
+    try {
+        load(profile)
+    } catch (error: Throwable) {
+        onFailure(profile, error)
+        emptyList()
+    }
+}
 
 /** Um ícone pronto para desenhar, mais de onde ele veio. */
 data class LoadedIcon(val drawable: Drawable, val fromPack: Boolean)
@@ -75,8 +105,21 @@ class AppRepository(
     private val themePrefs: ThemePrefs,
 ) : IconSource {
 
-    private val launcherApps = context.getSystemService(LauncherApps::class.java)
-    private val userManager = context.getSystemService(UserManager::class.java)
+    /**
+     * Tipo de plataforma vindo do sistema: o compilador não obriga a checagem,
+     * mas `getSystemService` devolve null quando o serviço não existe para este
+     * contexto, e num perfil restrito a própria chamada pode lançar. Nulo aqui
+     * quer dizer "sem lista de apps", não "processo morto".
+     */
+    private val launcherApps: LauncherApps? =
+        runCatching { context.getSystemService(LauncherApps::class.java) }
+            .onFailure { degraded(TAG, "sem LauncherApps", it) }
+            .getOrNull()
+
+    private val userManager: UserManager? =
+        runCatching { context.getSystemService(UserManager::class.java) }
+            .onFailure { degraded(TAG, "sem UserManager", it) }
+            .getOrNull()
 
     /** Ícones são caros: mantemos os mais recentes em memória, o resto recarrega sob demanda. */
     private val iconCache = LruCache<String, LoadedIcon>(200)
@@ -91,6 +134,13 @@ class AppRepository(
             // dele: o índice da busca cai junto e se refaz na próxima consulta.
             shortcutIndex = null
             loadApps()
+        }
+        // Última rede: o que escapar daqui para baixo chegaria a quem coleta —
+        // e quem coleta é a composição da home, onde uma exceção derruba o app.
+        // Lista vazia é uma gaveta vazia; é feio e é muito melhor que a home sumir.
+        .catch { error ->
+            degraded(TAG, "a lista de apps falhou", error)
+            emit(emptyList())
         }
         .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -111,12 +161,16 @@ class AppRepository(
     }
 
     private suspend fun loadApps(): List<AppEntry> = withContext(Dispatchers.IO) {
-        val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
-        val profiles = userManager?.userProfiles ?: listOf(Process.myUserHandle())
-        profiles.flatMap { user ->
+        val apps = flatMapProfiles(
+            profiles = profiles(),
+            onFailure = { user, error -> degraded(TAG, "perfil $user não respondeu", error) },
+        ) { user ->
             val private = isPrivateProfile(user)
-            runCatching { launcherApps.getActivityList(null, user) }.getOrDefault(emptyList())
-                .map { info ->
+            val activities = launcherApps?.getActivityList(null, user).orEmpty()
+            activities.mapNotNull { info ->
+                // Um app cujo rótulo não carrega (pacote a meio de atualizar)
+                // some da lista sozinho, sem levar o perfil junto.
+                runCatching {
                     appEntry(
                         component = info.componentName,
                         user = user,
@@ -124,18 +178,54 @@ class AppRepository(
                             .ifEmpty { info.componentName.packageName },
                         isPrivateProfile = private,
                     )
-                }
-        }.sortedWith { a, b -> collator.compare(a.label, b.label) }
+                }.getOrNull()
+            }
+        }
+        // Ordenar não pode ser o passo que derruba a lista inteira.
+        runCatching { apps.sortedWith(labelComparator()) }
+            .onFailure { degraded(TAG, "a ordenação falhou", it) }
+            .getOrDefault(apps)
+    }
+
+    /**
+     * Os perfis do usuário — pessoal, trabalho, Secure Folder, privado. Quando o
+     * sistema não responde sobra o perfil em que estamos rodando, que é o que a
+     * home precisa para não abrir vazia.
+     */
+    private fun profiles(): List<UserHandle> = runCatching { userManager?.userProfiles }
+        .onFailure { degraded(TAG, "não foi possível listar os perfis", it) }
+        .getOrNull()
+        ?.takeIf { it.isNotEmpty() }
+        ?: runCatching { listOf(Process.myUserHandle()) }.getOrDefault(emptyList())
+
+    /**
+     * A ordem alfabética do idioma do usuário. O [Collator] vem do ICU e, em
+     * tese, de um `Locale` que o aparelho pode não ter; sem ele a comparação cai
+     * na do próprio Java, que erra acento mas ordena.
+     */
+    private fun labelComparator(): Comparator<AppEntry> {
+        val collator = runCatching { Collator.getInstance().apply { strength = Collator.PRIMARY } }
+            .onFailure { degraded(TAG, "sem Collator; ordem simples", it) }
+            .getOrNull()
+        if (collator == null) {
+            return compareBy(String.CASE_INSENSITIVE_ORDER) { it.label }
+        }
+        return Comparator { a, b -> collator.compare(a.label, b.label) }
     }
 
     /**
      * Perfil privado existe a partir do Android 15 e só aparece aqui quando está
      * desbloqueado — a permissão ACCESS_HIDDEN_PROFILES é que nos deixa vê-lo.
+     *
+     * Num aparelho de verdade esta é uma das chamadas que lança: perfil trancado,
+     * perfil administrado, ou o fabricante respondendo outra coisa. Falhar aqui
+     * só quer dizer "não sei se é privado" — e não sabendo, ele é tratado como
+     * perfil comum.
      */
     private fun isPrivateProfile(user: UserHandle): Boolean {
         if (Build.VERSION.SDK_INT < 35) return false
         return runCatching {
-            launcherApps.getLauncherUserInfo(user)?.userType == UserManager.USER_TYPE_PROFILE_PRIVATE
+            launcherApps?.getLauncherUserInfo(user)?.userType == UserManager.USER_TYPE_PROFILE_PRIVATE
         }.getOrDefault(false)
     }
 
@@ -157,8 +247,8 @@ class AppRepository(
                 .also { iconCache.put(entry.key, it) }
         }
         val info = runCatching {
-            launcherApps.getActivityList(entry.component.packageName, entry.user)
-                .firstOrNull { it.componentName == entry.component }
+            launcherApps?.getActivityList(entry.component.packageName, entry.user)
+                ?.firstOrNull { it.componentName == entry.component }
         }.getOrNull() ?: return@withContext null
         val density = context.resources.displayMetrics.densityDpi
         val drawable = runCatching { info.getBadgedIcon(density) }.getOrNull()
@@ -167,16 +257,16 @@ class AppRepository(
     }
 
     fun launch(entry: AppEntry, sourceBounds: android.graphics.Rect? = null) {
-        runCatching { launcherApps.startMainActivity(entry.component, entry.user, sourceBounds, null) }
+        runCatching { launcherApps?.startMainActivity(entry.component, entry.user, sourceBounds, null) }
     }
 
     fun openAppInfo(entry: AppEntry) {
-        runCatching { launcherApps.startAppDetailsActivity(entry.component, entry.user, null, null) }
+        runCatching { launcherApps?.startAppDetailsActivity(entry.component, entry.user, null, null) }
     }
 
     /** Atalhos só são visíveis para o launcher padrão; sem isso, a lista vem vazia. */
     fun hasShortcutHostPermission(): Boolean =
-        runCatching { launcherApps.hasShortcutHostPermission() }.getOrDefault(false)
+        runCatching { launcherApps?.hasShortcutHostPermission() }.getOrNull() ?: false
 
     /** Atalhos declarados no manifesto, dinâmicos e fixados, na ordem de rank do app. */
     suspend fun shortcuts(entry: AppEntry): List<ShortcutInfo> = withContext(Dispatchers.IO) {
@@ -188,7 +278,7 @@ class AppRepository(
                     LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
                     LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED
             )
-        runCatching { launcherApps.getShortcuts(query, entry.user) }
+        runCatching { launcherApps?.getShortcuts(query, entry.user) }
             .getOrNull()
             .orEmpty()
             .sortedBy { it.rank }
@@ -238,10 +328,14 @@ class AppRepository(
                     LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
                     LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED
             )
-        val profiles = userManager?.userProfiles ?: listOf(Process.myUserHandle())
         val owners = HashMap<String, AppEntry?>()
-        profiles.flatMap { user ->
-            runCatching { launcherApps.getShortcuts(query, user) }.getOrNull().orEmpty()
+        // Mesmo tratamento da lista de apps: um perfil que recusa a consulta de
+        // atalhos sai do índice sem levar os outros junto.
+        flatMapProfiles(
+            profiles = profiles(),
+            onFailure = { user, error -> degraded(TAG, "atalhos do perfil $user", error) },
+        ) { user ->
+            launcherApps?.getShortcuts(query, user).orEmpty()
                 .mapNotNull { shortcut ->
                     val label = (shortcut.shortLabel ?: shortcut.longLabel)?.toString().orEmpty()
                     if (label.isBlank()) return@mapNotNull null
@@ -259,7 +353,7 @@ class AppRepository(
 
     /** A entrada do app dono do atalho, para a UI mostrar de quem ele é. */
     private fun mainEntry(packageName: String, user: UserHandle): AppEntry? = runCatching {
-        launcherApps.getActivityList(packageName, user).firstOrNull()?.let { info ->
+        launcherApps?.getActivityList(packageName, user)?.firstOrNull()?.let { info ->
             appEntry(
                 component = info.componentName,
                 user = user,
@@ -275,13 +369,13 @@ class AppRepository(
         shortcutIconCache[cacheKey]?.let { return@withContext it }
         val density = context.resources.displayMetrics.densityDpi
         val drawable = runCatching {
-            launcherApps.getShortcutIconDrawable(shortcut, density)
+            launcherApps?.getShortcutIconDrawable(shortcut, density)
         }.getOrNull()
         drawable?.also { shortcutIconCache.put(cacheKey, it) }
     }
 
     fun startShortcut(shortcut: ShortcutInfo) {
-        runCatching { launcherApps.startShortcut(shortcut, null, null) }
+        runCatching { launcherApps?.startShortcut(shortcut, null, null) }
     }
 
     /**
@@ -298,8 +392,8 @@ class AppRepository(
     }
 
     fun isSystemApp(component: ComponentName, user: UserHandle): Boolean = runCatching {
-        val info = launcherApps.getApplicationInfo(component.packageName, 0, user)
-        info.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0
+        val info = launcherApps?.getApplicationInfo(component.packageName, 0, user)
+        info != null && info.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0
     }.getOrDefault(false)
 
     /** Somos a home do sistema? Atalhos e (mais tarde) widgets dependem disso. */
@@ -337,6 +431,7 @@ class AppRepository(
     /** Emite uma vez de saída e depois a cada mudança no conjunto de pacotes. */
     private fun packageChanges(): Flow<Unit> = callbackFlow {
         trySend(Unit)
+        val apps = launcherApps
         val callback = object : LauncherApps.Callback() {
             override fun onPackageRemoved(packageName: String?, user: UserHandle?) { trySend(Unit) }
             override fun onPackageAdded(packageName: String?, user: UserHandle?) { trySend(Unit) }
@@ -344,7 +439,17 @@ class AppRepository(
             override fun onPackagesAvailable(names: Array<out String>?, user: UserHandle?, replacing: Boolean) { trySend(Unit) }
             override fun onPackagesUnavailable(names: Array<out String>?, user: UserHandle?, replacing: Boolean) { trySend(Unit) }
         }
-        launcherApps.registerCallback(callback)
-        awaitClose { launcherApps.unregisterCallback(callback) }
+        // Sem registro não há atualização automática: a lista fica sendo a que a
+        // primeira emissão leu, até o processo recomeçar. Instalar um app não
+        // aparece na hora — e é bem menos do que se perde derrubando a tela
+        // inicial por causa de um callback que não pôde ser registrado.
+        val registered = apps != null && runCatching { apps.registerCallback(callback) }
+            .onFailure { degraded(TAG, "sem aviso de mudança de pacotes", it) }
+            .isSuccess
+        // `awaitClose` é obrigatório mesmo sem registro: sem ele o callbackFlow
+        // lança em vez de simplesmente parar de emitir.
+        awaitClose {
+            if (registered) runCatching { apps?.unregisterCallback(callback) }
+        }
     }
 }

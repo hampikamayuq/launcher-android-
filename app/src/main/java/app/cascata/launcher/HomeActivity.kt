@@ -74,22 +74,29 @@ class HomeActivity : ComponentActivity() {
 
             // Cor do papel de parede: lida uma vez (o `onStart`) e relida a cada
             // troca de fundo. O WallpaperManager é binder — não na main thread.
+            // O `runCatching` embrulha a coleta inteira: este corpo roda no
+            // escopo da composição, e uma exceção aqui cancela a tela — sem cor
+            // de papel de parede o tema usa a semente que já tem.
             val wallpaperSeed by produceState<Int?>(null) {
-                app.wallpaperColors.changes()
-                    .onStart { emit(Unit) }
-                    .collect {
-                        value = withContext(Dispatchers.IO) { app.wallpaperColors.primaryArgb() }
-                    }
+                runCatching {
+                    app.wallpaperColors.changes()
+                        .onStart { emit(Unit) }
+                        .collect {
+                            value = withContext(Dispatchers.IO) { app.wallpaperColors.primaryArgb() }
+                        }
+                }
             }
 
             // Se o papel de parede aguenta texto escuro por cima. Mesmo Flow da
             // cor: uma troca de fundo muda as duas respostas de uma vez.
             val wallpaperDarkText by produceState<Boolean?>(null) {
-                app.wallpaperColors.changes()
-                    .onStart { emit(Unit) }
-                    .collect {
-                        value = withContext(Dispatchers.IO) { app.wallpaperColors.supportsDarkText() }
-                    }
+                runCatching {
+                    app.wallpaperColors.changes()
+                        .onStart { emit(Unit) }
+                        .collect {
+                            value = withContext(Dispatchers.IO) { app.wallpaperColors.supportsDarkText() }
+                        }
+                }
             }
 
             // Os widgets colocados. Lista vazia é o caso normal de quem nunca

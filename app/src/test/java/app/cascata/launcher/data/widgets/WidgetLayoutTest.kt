@@ -195,6 +195,28 @@ class WidgetLayoutTest {
         assertEquals(listOf(10, 12, 11), layout.allWidgetIds())
     }
 
+    /**
+     * Aparelho sem `FEATURE_APP_WIDGETS` não tem host: a faixa inteira some da
+     * home em vez de virar uma fileira de molduras vazias — e o layout gravado
+     * continua no disco, para voltar se o host voltar.
+     */
+    @Test
+    fun `sem host a home nao desenha slot nenhum`() {
+        val layout = WidgetLayout.EMPTY
+            .addWidget(slotId = null, widget = widget(1), heightCells = 2)
+            .addWidget(slotId = null, widget = widget(2), heightCells = 3)
+
+        assertEquals(2, layout.slots.size)
+        assertTrue(visibleSlots(layout, hostAvailable = false).isEmpty())
+        assertEquals(layout.slots, visibleSlots(layout, hostAvailable = true))
+    }
+
+    @Test
+    fun `com host e sem widget a faixa continua vazia`() {
+        assertTrue(visibleSlots(WidgetLayout.EMPTY, hostAvailable = true).isEmpty())
+        assertTrue(visibleSlots(WidgetLayout.EMPTY, hostAvailable = false).isEmpty())
+    }
+
     @Test
     fun `cellsFor arredonda para cima`() {
         assertEquals(1, cellsFor(minHeightPx = 1, cellPx = 100))

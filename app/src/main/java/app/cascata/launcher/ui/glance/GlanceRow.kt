@@ -362,8 +362,16 @@ private fun openEvent(context: Context, event: CalendarEvent) {
 @Composable
 internal fun rememberTimeFormat(locale: Locale): SimpleDateFormat {
     val context = LocalContext.current
-    val is24h = remember(locale) { android.text.format.DateFormat.is24HourFormat(context) }
-    return remember(locale, is24h) { SimpleDateFormat(if (is24h) "HH:mm" else "h:mm a", locale) }
+    val is24h = remember(locale) {
+        runCatching { android.text.format.DateFormat.is24HourFormat(context) }.getOrDefault(true)
+    }
+    // Um `Locale` que o ICU do aparelho não conhece lançaria aqui, na composição
+    // da primeira tela. Sem ele o formato cai no de sempre, em inglês.
+    return remember(locale, is24h) {
+        val pattern = if (is24h) "HH:mm" else "h:mm a"
+        runCatching { SimpleDateFormat(pattern, locale) }
+            .getOrElse { SimpleDateFormat(pattern, Locale.US) }
+    }
 }
 
 /**

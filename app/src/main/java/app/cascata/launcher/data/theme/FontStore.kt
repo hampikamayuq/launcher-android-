@@ -36,8 +36,12 @@ class FontStore(private val context: Context) {
     private val dir: File get() = File(context.filesDir, "fonts")
     private val target: File get() = File(dir, "custom.ttf")
 
-    /** O arquivo importado, ou null se não há nenhum. */
-    fun customFile(): File? = target.takeIf { it.isFile }
+    /**
+     * O arquivo importado, ou null se não há nenhum. É lido no `onCreate` e no
+     * `onResume` da home, então nem tocar no disco pode lançar daqui: sem
+     * resposta, vale "não há fonte importada".
+     */
+    fun customFile(): File? = runCatching { target.takeIf { it.isFile } }.getOrNull()
 
     /**
      * Copia o conteúdo de [uri] para o diretório do app. Grava num temporário e

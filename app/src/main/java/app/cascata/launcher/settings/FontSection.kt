@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.cascata.launcher.R
@@ -40,10 +41,15 @@ internal fun FontSection(
     onCustomFontChanged: () -> Unit,
     onMessage: (String) -> Unit,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val failed = stringResource(R.string.font_import_failed)
     // A família do arquivo importado é criada uma vez por arquivo, não por quadro.
-    val customFamily = remember(customFont) { Fonts.family(Fonts.CUSTOM_ID, customFont) }
+    // Mesma checagem da home: a prévia mostra a do sistema quando o arquivo
+    // importado não carrega, que é o que a home também vai mostrar.
+    val customFamily = remember(customFont, context) {
+        runCatching { Fonts.family(Fonts.CUSTOM_ID, customFont, context) }.getOrNull()
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {

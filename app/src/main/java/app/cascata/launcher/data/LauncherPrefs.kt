@@ -5,12 +5,19 @@ import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.cascata.launcher.crash.catchEmitting
+import app.cascata.launcher.crash.degraded
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+
+/** Tag dos avisos deste arquivo. */
+private const val TAG = "CascataPrefs"
 
 /** Ordem dos favoritos, uma chave por linha. Ver [encodeKeys]. */
 private val FAVORITES_ORDER = stringPreferencesKey("favorites_order")
@@ -52,14 +59,28 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
  */
 class LauncherPrefs(private val context: Context) {
 
+    // Um DataStore pode lançar ao ler: arquivo corrompido por um desligamento no
+    // meio da escrita (IOException) ou uma chave gravada com outro tipo por uma
+    // versão anterior (ClassCastException). Quem coleta é a composição da home —
+    // sem isto, uma preferência ilegível derruba a tela inicial; com isto, ela
+    // volta ao padrão. O `catch` depois de cada `map` cobre a leitura da chave,
+    // que é onde o tipo errado aparece.
     private val data: Flow<Preferences> = context.dataStore.data
+        .catch { error ->
+            degraded(TAG, "preferências ilegíveis", error)
+            emit(emptyPreferences())
+        }
 
     /** Chaves de [AppEntry] na ordem escolhida pelo usuário. */
-    val favorites: Flow<List<String>> =
-        data.map { decodeKeys(it[FAVORITES_ORDER]) }.distinctUntilChanged()
+    val favorites: Flow<List<String>> = data
+        .map { decodeKeys(it[FAVORITES_ORDER]) }
+        .distinctUntilChanged()
+        .catchEmitting(TAG, "favoritos ilegíveis", emptyList())
 
-    val hidden: Flow<Set<String>> =
-        data.map { it[HIDDEN] ?: emptySet() }.distinctUntilChanged()
+    val hidden: Flow<Set<String>> = data
+        .map { it[HIDDEN] ?: emptySet() }
+        .distinctUntilChanged()
+        .catchEmitting(TAG, "apps escondidos ilegíveis", emptySet())
 
     /**
      * Chave do app -> apelido. Cada apelido é uma preferência própria (`alias:<chave>`),
@@ -72,6 +93,7 @@ class LauncherPrefs(private val context: Context) {
             entryKey to alias
         }.toMap()
     }.distinctUntilChanged()
+        .catchEmitting(TAG, "apelidos ilegíveis", emptyMap())
 
     /** Fixa no fim da lista, ou desafixa mantendo a ordem do resto. */
     suspend fun toggleFavorite(key: String) {

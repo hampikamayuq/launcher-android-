@@ -6,6 +6,7 @@ import android.content.pm.ShortcutInfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import app.cascata.launcher.crash.catchEmitting
 import app.cascata.launcher.data.AppEntry
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
@@ -64,6 +65,9 @@ import java.text.Collator
  * atalhos, contatos e configurações esperam o dedo parar.
  */
 private const val SEARCH_DEBOUNCE_MS = 120L
+
+/** Tag dos avisos deste arquivo. */
+private const val TAG = "CascataHome"
 
 data class HomeUiState(
     val rows: List<Row<AppEntry>> = emptyList(),
@@ -156,7 +160,14 @@ class HomeViewModel(
     private val query = MutableStateFlow("")
     private val system = MutableStateFlow(SystemState())
 
-    private val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
+    /**
+     * A ordem alfabética do idioma do usuário. O ViewModel nasce no `onCreate` da
+     * home, e uma exceção num inicializador de propriedade aqui derruba a abertura
+     * inteira — então a falta do [Collator] vira a comparação simples do Java, que
+     * erra acento mas ordena.
+     */
+    private val collator: Collator? =
+        runCatching { Collator.getInstance().apply { strength = Collator.PRIMARY } }.getOrNull()
 
     private val builder = HomeStateBuilder<AppEntry>(
         key = { it.key },
@@ -164,7 +175,9 @@ class HomeViewModel(
         normalized = { it.normalizedLabel },
         section = { it.section },
         withAlias = { entry, alias -> entry.withAlias(alias) },
-        compareLabels = { a, b -> collator.compare(a, b) },
+        compareLabels = { a, b ->
+            collator?.compare(a, b) ?: String.CASE_INSENSITIVE_ORDER.compare(a, b)
+        },
     )
 
     private val stored = combine(prefs.favorites, prefs.hidden, prefs.aliases, ::Stored)
@@ -183,7 +196,11 @@ class HomeViewModel(
                 showWelcome = !sys.isDefaultLauncher && !sys.welcomeDismissed,
                 hasShortcutHost = sys.hasShortcutHost,
             )
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+        }
+            // A home coleta este StateFlow direto na composição: o que escapar
+            // daqui derruba a tela inicial. Estado vazio é uma gaveta vazia.
+            .catchEmitting(TAG, "o estado da home falhou", HomeUiState())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     /** O serviço está conectado? É o que separa "ligado" de "ligado e funcionando". */
     val notificationsConnected: StateFlow<Boolean> get() = notificationStore.connected
@@ -201,7 +218,9 @@ class HomeViewModel(
     val notifications: StateFlow<Map<String, List<AppNotification>>> =
         combine(notificationStore.byApp, notificationSettings) { byApp, settings ->
             visibleNotifications(byApp, settings)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        }
+            .catchEmitting(TAG, "as notificações falharam", emptyMap())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** O que o usuário escolheu para a busca; a UI de configurações grava aqui. */
     val searchSettings: StateFlow<SearchSettings> =
@@ -246,7 +265,9 @@ class HomeViewModel(
                 settings = fresh?.settings.orEmpty(),
                 web = if (settings.showWeb) settings.engine to q else null,
             )
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SearchExtras())
+        }
+            .catchEmitting(TAG, "os extras da busca falharam", SearchExtras())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SearchExtras())
 
     /**
      * Fora da main thread: o índice de configurações resolve intents no
@@ -294,6 +315,7 @@ class HomeViewModel(
     val usageToday: StateFlow<List<AppUsage>> =
         combine(usageSettings, usageRefresh) { settings, _ -> settings }
             .mapLatest { settings -> loadUsage(settings) }
+            .catchEmitting(TAG, "o tempo de uso falhou", emptyList())
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val pausePromptState = MutableStateFlow<PausePrompt?>(null)

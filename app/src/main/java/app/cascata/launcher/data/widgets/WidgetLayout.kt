@@ -131,6 +131,15 @@ fun WidgetLayout.remapIds(old: IntArray, new: IntArray): WidgetLayout {
     return copy(slots = slots)
 }
 
+/**
+ * Os slots que a home deve desenhar. Sem host de widgets no aparelho não há
+ * slot nenhum: o layout gravado continua no disco (trocar de aparelho, ou uma
+ * atualização do sistema, faz os widgets voltarem), mas a faixa some da tela em
+ * vez de virar uma fileira de molduras vazias.
+ */
+fun visibleSlots(layout: WidgetLayout, hostAvailable: Boolean): List<WidgetSlot> =
+    if (hostAvailable) layout.slots else emptyList()
+
 /** Todos os ids em uso, na ordem da tela. É o que o host precisa saber para limpar o resto. */
 fun WidgetLayout.allWidgetIds(): List<Int> = slots.flatMap { slot -> slot.widgets.map { it.appWidgetId } }
 

@@ -46,6 +46,7 @@ import app.cascata.launcher.data.widgets.PlacedWidget
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetLayout
 import app.cascata.launcher.data.widgets.WidgetSlot
+import app.cascata.launcher.data.widgets.visibleSlots
 import kotlinx.coroutines.flow.drop
 
 private val SLOT_CORNER = 16.dp
@@ -93,10 +94,13 @@ fun WidgetArea(
 ) {
     var editing by remember { mutableStateOf<Int?>(null) }
 
+    // Aparelho sem host de widgets não desenha faixa nenhuma — nem a moldura.
+    val slots = visibleSlots(layout, host.available)
+
     // Tirar o último widget apaga o slot: a folha aberta perde o assunto.
-    LaunchedEffect(layout) {
+    LaunchedEffect(slots) {
         val open = editing
-        if (open != null && layout.slots.none { it.id == open }) editing = null
+        if (open != null && slots.none { it.id == open }) editing = null
     }
 
     Column(
@@ -105,7 +109,7 @@ fun WidgetArea(
             .fillMaxWidth()
             .padding(bottom = SLOT_GAP),
     ) {
-        layout.slots.forEach { slot ->
+        slots.forEach { slot ->
             key(slot.id) {
                 SlotBox(
                     slot = slot,
@@ -118,12 +122,12 @@ fun WidgetArea(
         }
     }
 
-    layout.slots.firstOrNull { it.id == editing }?.let { slot ->
+    slots.firstOrNull { it.id == editing }?.let { slot ->
         WidgetSlotSheet(
             slot = slot,
             host = host,
-            canMoveUp = layout.slots.first().id != slot.id,
-            canMoveDown = layout.slots.last().id != slot.id,
+            canMoveUp = slots.first().id != slot.id,
+            canMoveDown = slots.last().id != slot.id,
             actions = actions,
             onDismiss = { editing = null },
         )
@@ -287,7 +291,14 @@ private fun WidgetFrame(
         return
     }
 
+    // Null quando nem a view sai: o processo do provedor pode ter caído ao
+    // inflar o RemoteViews dele, e isso não vale a home inteira.
     val view = remember(widget.appWidgetId) { host.createView(context, widget.appWidgetId, info) }
+    if (view == null) {
+        UnavailableWidget(onRemove = { onRemove(widget.appWidgetId) })
+        return
+    }
+
     AndroidView(
         factory = { view },
         update = { host.updateSize(it, widthDp, heightDp) },

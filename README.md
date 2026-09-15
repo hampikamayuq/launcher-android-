@@ -19,13 +19,13 @@ O roteiro completo, fase a fase, está em [`docs/plano.md`](docs/plano.md).
   `applicationId` nas duas — instala-se uma ou outra, nunca as duas juntas.
 - Onde baixar: [GitHub Releases](https://github.com/hampikamayuq/launcher-android-/releases),
   dois APKs por tag (`Cascata-vX.Y.Z-lite.apk` e `-full.apk`), cada um com seu
-  `.sha256`. A versão 1.1 sai assim que a tag `v1.1.0` for criada — antes
+  `.sha256`. A versão 1.1 sai assim que a tag `v1.1.1` for criada — antes
   disso, a lista de releases mostra as versões anteriores.
 
 **Privacidade:** o app não coleta nem envia dados — detalhes e como conferir
 em [`docs/privacidade.md`](docs/privacidade.md).
 
-## Estado atual (v1.1.0 — nove fases do plano e a Fase 10)
+## Estado atual (v1.1.1 — nove fases do plano, a Fase 10 e o endurecimento)
 
 | | |
 |---|---|
@@ -65,7 +65,7 @@ em [`docs/privacidade.md`](docs/privacidade.md).
 
 ## Tamanho
 
-| | Cascata 1.1.0 `lite` (release, R8 + Baseline Profile) | Cascata 1.1.0 `full` (release, R8 + Baseline Profile) | Niagara 1.16.28 |
+| | Cascata 1.1.1 `lite` (release, R8 + Baseline Profile) | Cascata 1.1.1 `full` (release, R8 + Baseline Profile) | Niagara 1.16.28 |
 |---|---|---|---|
 | APK | **2.427.721 bytes** (≈ 2,32 MB) | **2.435.189 bytes** (≈ 2,32 MB) | 13,4 MB |
 | Permissões | `ACCESS_HIDDEN_PROFILES`, `READ_CALENDAR`, `READ_CONTACTS`, `PACKAGE_USAGE_STATS`, `BIND_APPWIDGET` (sistema) | as mesmas + `INTERNET`, `ACCESS_COARSE_LOCATION` | 26 |

@@ -6,10 +6,14 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.cascata.launcher.crash.catchEmitting
+import app.cascata.launcher.crash.degraded
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
@@ -42,14 +46,28 @@ private val EXPAND_INLINE = booleanPreferencesKey("expand_inline")
 private val MUTED_PACKAGES = stringSetPreferencesKey("muted_packages")
 private val SHOW_MEDIA = booleanPreferencesKey("show_media")
 
+/** Tag dos avisos deste arquivo. */
+private const val TAG = "CascataPrefs"
+
 /** Arquivo próprio, como o dos cards: silenciar um app não mexe em mais nada. */
 private val Context.notificationDataStore: DataStore<Preferences> by preferencesDataStore(name = "cascata_notifications")
 
 class NotificationPrefs(private val context: Context) {
 
+    // Um DataStore pode lançar ao ler: arquivo corrompido por um desligamento no
+    // meio da escrita (IOException) ou uma chave gravada com outro tipo por uma
+    // versão anterior (ClassCastException). Quem coleta é a composição — sem
+    // isto, uma preferência ilegível derruba a tela; com isto, ela volta ao
+    // padrão. O segundo `catch` cobre a leitura das chaves, que é onde o tipo
+    // errado aparece.
     val settings: Flow<NotificationSettings> = context.notificationDataStore.data
+        .catch { error ->
+            degraded(TAG, "preferências de notificação ilegíveis", error)
+            emit(emptyPreferences())
+        }
         .map { it.toSettings() }
         .distinctUntilChanged()
+        .catchEmitting(TAG, "preferências de notificação ilegíveis", NotificationSettings.DEFAULT)
 
     /** Lê, transforma e grava numa transação só: dois toques seguidos não se perdem. */
     suspend fun update(transform: (NotificationSettings) -> NotificationSettings) {

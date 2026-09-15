@@ -59,7 +59,9 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     // Observável: trocar o idioma do sistema refaz os formatos sem reiniciar o app.
     val locale = LocalLocale.current.platformLocale
-    val is24h = remember(locale) { android.text.format.DateFormat.is24HourFormat(context) }
+    val is24h = remember(locale) {
+        runCatching { android.text.format.DateFormat.is24HourFormat(context) }.getOrDefault(true)
+    }
 
     var now by remember { mutableStateOf(Date()) }
     LaunchedEffect(Unit) {
@@ -99,29 +101,41 @@ fun ClockHeader(clockStyle: ClockStyle, modifier: Modifier = Modifier) {
  */
 @Composable
 internal fun ClockFace(clockStyle: ClockStyle, now: Date, is24h: Boolean, locale: Locale) {
+    // Formatar é a primeira coisa que a home desenha: um `Locale` que o ICU do
+    // aparelho não conhece lançaria aqui e levaria a tela junto. Sem formato, o
+    // texto some — o relógio continua, o app continua.
     val timeFormat = remember(locale, is24h) {
-        SimpleDateFormat(if (is24h) "HH:mm" else "h:mm a", locale)
+        runCatching { SimpleDateFormat(if (is24h) "HH:mm" else "h:mm a", locale) }.getOrNull()
     }
     // O padrão vem do idioma, não de um literal em português: "quinta-feira, 12
     // de fevereiro", "Thursday, February 12", "jueves, 12 de febrero".
     val dateFormat = remember(locale) {
-        SimpleDateFormat(
-            android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"),
-            locale,
-        )
+        runCatching {
+            SimpleDateFormat(
+                android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"),
+                locale,
+            )
+        }.getOrNull()
     }
-    val date = dateFormat.format(now).replaceFirstChar { it.uppercase(locale) }
+    val time = remember(timeFormat, now) {
+        runCatching { timeFormat?.format(now) }.getOrNull().orEmpty()
+    }
+    val date = remember(dateFormat, now, locale) {
+        runCatching { dateFormat?.format(now)?.replaceFirstChar { it.uppercase(locale) } }
+            .getOrNull()
+            .orEmpty()
+    }
 
     when (clockStyle) {
         ClockStyle.BASIC -> StackedClock(
-            time = timeFormat.format(now),
+            time = time,
             date = date,
             timeStyle = MaterialTheme.typography.displayMedium,
             dateStyle = MaterialTheme.typography.bodyMedium,
         )
 
         ClockStyle.BIG -> StackedClock(
-            time = timeFormat.format(now),
+            time = time,
             date = date,
             timeStyle = MaterialTheme.typography.displayLarge,
             dateStyle = MaterialTheme.typography.bodyLarge,
@@ -137,10 +151,14 @@ internal fun ClockFace(clockStyle: ClockStyle, now: Date, is24h: Boolean, locale
         ClockStyle.ANALOG -> AnalogClockRow(
             now = now,
             date = date,
-            time = timeFormat.format(now),
+            time = time,
         )
     }
 }
+
+/** Um pedaço de data formatado, ou vazio quando o aparelho recusa o padrão. */
+private fun format(pattern: String, locale: Locale, now: Date): String =
+    runCatching { SimpleDateFormat(pattern, locale).format(now) }.getOrDefault("")
 
 /** Hora em cima, data embaixo: serve ao estilo básico e ao de dígitos grandes. */
 @Composable
@@ -171,9 +189,11 @@ private fun StackedClock(
  */
 @Composable
 private fun TwoLineClock(now: Date, date: String, is24h: Boolean, locale: Locale) {
-    val hourFormat = remember(locale, is24h) { SimpleDateFormat(if (is24h) "HH" else "h", locale) }
-    val minuteFormat = remember(locale) { SimpleDateFormat("mm", locale) }
-    val markerFormat = remember(locale) { SimpleDateFormat("a", locale) }
+    // Mesmo cuidado do formato de cima: um `Locale` que o aparelho não conhece
+    // não pode derrubar a tela inicial — no pior caso o dígito não aparece.
+    val hour = remember(locale, is24h, now) { format(if (is24h) "HH" else "h", locale, now) }
+    val minute = remember(locale, now) { format("mm", locale, now) }
+    val marker = remember(locale, now) { format("a", locale, now) }
 
     val digits = MaterialTheme.typography.displayLarge.copy(
         fontSize = TWO_LINE_SIZE,
@@ -183,20 +203,20 @@ private fun TwoLineClock(now: Date, date: String, is24h: Boolean, locale: Locale
 
     Column(horizontalAlignment = Alignment.Start) {
         Text(
-            text = hourFormat.format(now),
+            text = hour,
             style = digits,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = minuteFormat.format(now),
+                text = minute,
                 style = digits,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (!is24h) {
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = markerFormat.format(now),
+                    text = marker,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),

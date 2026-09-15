@@ -35,9 +35,10 @@ private val PROJECTION = arrayOf(
  */
 class ContactsSource(private val context: Context) {
 
-    fun hasPermission(): Boolean =
+    fun hasPermission(): Boolean = runCatching {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) ==
             PackageManager.PERMISSION_GRANTED
+    }.getOrDefault(false)
 
     /**
      * Casamento é o do próprio provedor (`CONTENT_FILTER_URI`): ele já lida com

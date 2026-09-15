@@ -21,6 +21,7 @@ class CrashReportTest {
         sdkInt: Int = 34,
         threadName: String = "main",
         stackTrace: String = "java.lang.IllegalStateException: teste\n\tat app.Foo.bar(Foo.kt:10)",
+        fatal: Boolean = true,
     ) = crashReport(
         timestamp = timestamp,
         versionName = versionName,
@@ -31,6 +32,7 @@ class CrashReportTest {
         sdkInt = sdkInt,
         threadName = threadName,
         stackTrace = stackTrace,
+        fatal = fatal,
     )
 
     @Test
@@ -87,5 +89,23 @@ class CrashReportTest {
     @Test
     fun `a edicao aparece no cabecalho`() {
         assertTrue(report(flavor = "full").lines()[0].endsWith("(111, full)"))
+    }
+
+    /**
+     * O aviso não fatal usa o mesmo cabeçalho, com uma linha antes dizendo que o
+     * app seguiu aberto — sem ela, quem abrisse as configurações leria um
+     * relatório de falha para algo que não derrubou nada.
+     */
+    @Test
+    fun `aviso nao fatal se anuncia antes do cabecalho`() {
+        val lines = report(threadName = "appScope", fatal = false).lines()
+        assertEquals("Aviso: o app seguiu aberto com um recurso degradado.", lines[0])
+        assertEquals("Cascata 1.1.0 (111, lite)", lines[1])
+        assertTrue(lines.any { it == "Thread: appScope" })
+    }
+
+    @Test
+    fun `relatorio fatal nao ganha a linha de aviso`() {
+        assertEquals("Cascata 1.1.0 (111, lite)", report().lines()[0])
     }
 }

@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.cascata.launcher.crash.catchEmitting
+import app.cascata.launcher.crash.degraded
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -18,6 +22,9 @@ private val LAYOUT = stringPreferencesKey("layout")
  * encostar em favoritos nem na aparência.
  */
 private val Context.widgetDataStore: DataStore<Preferences> by preferencesDataStore(name = "cascata_widgets")
+
+/** Tag dos avisos deste arquivo. */
+private const val TAG = "CascataPrefs"
 
 /**
  * Campo novo escrito por uma versão futura não invalida o layout inteiro;
@@ -35,9 +42,20 @@ private val json = Json {
  */
 class WidgetPrefs(private val context: Context) {
 
+    // Um DataStore pode lançar ao ler: arquivo corrompido por um desligamento no
+    // meio da escrita (IOException) ou uma chave gravada com outro tipo por uma
+    // versão anterior (ClassCastException). Quem coleta é a composição — sem
+    // isto, uma preferência ilegível derruba a tela; com isto, ela volta ao
+    // padrão. O segundo `catch` cobre a leitura das chaves, que é onde o tipo
+    // errado aparece.
     val layout: Flow<WidgetLayout> = context.widgetDataStore.data
+        .catch { error ->
+            degraded(TAG, "layout de widgets ilegível", error)
+            emit(emptyPreferences())
+        }
         .map { prefs -> decode(prefs[LAYOUT]) }
         .distinctUntilChanged()
+        .catchEmitting(TAG, "layout de widgets ilegível", WidgetLayout.EMPTY)
 
     /** Lê, transforma e grava numa transação só: dois toques seguidos não se perdem. */
     suspend fun update(transform: (WidgetLayout) -> WidgetLayout) {

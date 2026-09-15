@@ -6,10 +6,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.core.content.ContextCompat
+import app.cascata.launcher.crash.catchQuietly
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+
+private const val TAG = "CascataGlance"
 
 /** Carga em porcentagem (0..100) e se está carregando (tomada ou USB). */
 data class BatteryState(val percent: Int, val charging: Boolean)
@@ -34,6 +37,7 @@ class BatterySource(private val context: Context) {
         sticky?.toState()?.let { trySend(it) }
         awaitClose { runCatching { context.unregisterReceiver(receiver) } }
     }.distinctUntilChanged()
+        .catchQuietly(TAG, "a bateria não respondeu")
 }
 
 /** O intent traz nível e escala separados porque nem todo aparelho usa escala 100. */

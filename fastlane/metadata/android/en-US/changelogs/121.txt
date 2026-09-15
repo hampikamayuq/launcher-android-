@@ -1,0 +1,5 @@
+1.1.1 — Stability: no optional feature can bring the home screen down any
+more (device profiles, widgets, glance cards, corrupt preferences, a font
+the device refuses). When something does break, a screen shows the error
+for you to copy instead of the app vanishing — and the report never leaves
+the device. Also fixes favorite dragging, the side index and the search gesture.

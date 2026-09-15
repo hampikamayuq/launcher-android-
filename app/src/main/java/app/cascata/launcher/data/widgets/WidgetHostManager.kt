@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
+import app.cascata.launcher.crash.degraded
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,6 +21,9 @@ import kotlinx.coroutines.withContext
  * constante só existe da API 28 em diante e o mínimo aqui é 26.
  */
 private const val FEATURE_CONFIGURATION_OPTIONAL = 4
+
+/** Tag dos avisos desta área: sem widgets a home abre igual, só sem a faixa. */
+private const val TAG = "CascataWidgets"
 
 /** Um provedor instalado, já com os rótulos resolvidos — o seletor não toca no PackageManager. */
 data class WidgetProvider(
@@ -45,10 +49,33 @@ data class WidgetProvider(
  */
 class WidgetHostManager(private val context: Context) {
 
-    val host: AppWidgetHost = AppWidgetHost(context, WIDGET_HOST_ID)
+    /**
+     * Os dois são opcionais de propósito. Num aparelho sem `FEATURE_APP_WIDGETS`
+     * — televisores, relógios, perfis administrados, e o que cada fabricante
+     * resolve desligar — `AppWidgetManager.getInstance` devolve null e o
+     * construtor do host lança. Como este objeto é criado no `onStart` da home
+     * (por `by lazy`, na primeira chamada a `startListening`), uma exceção aqui
+     * dentro morre *antes* de qualquer `runCatching` interno e derruba a tela
+     * inicial inteira por causa de um recurso que o usuário talvez nem use.
+     *
+     * Com os dois nulos o launcher abre sem área de widgets: [available] é false,
+     * a lista de provedores vem vazia e nenhum slot é desenhado.
+     */
+    private val host: AppWidgetHost? = runCatching { AppWidgetHost(context, WIDGET_HOST_ID) }
+        .onFailure { degraded(TAG, "sem host de widgets", it) }
+        .getOrNull()
 
-    private val widgetManager: AppWidgetManager = AppWidgetManager.getInstance(context)
-    private val packageManager = context.packageManager
+    private val widgetManager: AppWidgetManager? = runCatching { AppWidgetManager.getInstance(context) }
+        .onFailure { degraded(TAG, "sem AppWidgetManager", it) }
+        .getOrNull()
+
+    private val packageManager = runCatching { context.packageManager }.getOrNull()
+
+    /**
+     * Se este aparelho tem widgets. Falso desliga a área inteira: sem host não há
+     * o que alocar, ligar, desenhar nem ouvir.
+     */
+    val available: Boolean get() = host != null && widgetManager != null
 
     /** Altura de uma célula em px, para converter o mínimo que o provedor pede. */
     private val cellPx: Int
@@ -56,29 +83,34 @@ class WidgetHostManager(private val context: Context) {
 
     /** Sem widget na tela o host não tem o que ouvir; e alguns aparelhos lançam ao parar. */
     fun startListening() {
-        runCatching { host.startListening() }
+        runCatching { host?.startListening() }
     }
 
     fun stopListening() {
-        runCatching { host.stopListening() }
+        runCatching { host?.stopListening() }
     }
 
-    fun allocateId(): Int = host.allocateAppWidgetId()
+    /** [AppWidgetManager.INVALID_APPWIDGET_ID] quando não há host: ninguém tem o que colocar. */
+    fun allocateId(): Int = runCatching { host?.allocateAppWidgetId() }
+        .onFailure { degraded(TAG, "não foi possível alocar um id", it) }
+        .getOrNull()
+        ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
     fun deleteId(appWidgetId: Int) {
-        runCatching { host.deleteAppWidgetId(appWidgetId) }
+        runCatching { host?.deleteAppWidgetId(appWidgetId) }
     }
 
     /** Null quando o id não está mais ligado a provedor nenhum (app removido, bind perdido). */
     fun providerInfo(appWidgetId: Int): AppWidgetProviderInfo? =
-        runCatching { widgetManager.getAppWidgetInfo(appWidgetId) }.getOrNull()
+        runCatching { widgetManager?.getAppWidgetInfo(appWidgetId) }.getOrNull()
 
     /** True se o sistema já nos deixa ligar o id ao provedor sem passar pelo diálogo. */
     fun bindIfAllowed(appWidgetId: Int, provider: ComponentName, user: UserHandle?): Boolean = runCatching {
+        val manager = widgetManager ?: return@runCatching false
         if (user != null) {
-            widgetManager.bindAppWidgetIdIfAllowed(appWidgetId, user, provider, null)
+            manager.bindAppWidgetIdIfAllowed(appWidgetId, user, provider, null)
         } else {
-            widgetManager.bindAppWidgetIdIfAllowed(appWidgetId, provider)
+            manager.bindAppWidgetIdIfAllowed(appWidgetId, provider)
         }
     }.getOrDefault(false)
 
@@ -108,12 +140,19 @@ class WidgetHostManager(private val context: Context) {
      */
     fun startConfigure(activity: Activity, appWidgetId: Int, requestCode: Int) {
         runCatching {
-            host.startAppWidgetConfigureActivityForResult(activity, appWidgetId, 0, requestCode, null)
+            host?.startAppWidgetConfigureActivityForResult(activity, appWidgetId, 0, requestCode, null)
         }
     }
 
-    fun createView(context: Context, appWidgetId: Int, info: AppWidgetProviderInfo): AppWidgetHostView =
-        host.createView(context, appWidgetId, info).apply { setAppWidget(appWidgetId, info) }
+    /**
+     * A view do widget, ou null quando não dá para criá-la — sem host, ou porque
+     * o processo do outro app caiu no meio da inflação do `RemoteViews`. Quem
+     * desenha mostra a moldura de "widget indisponível" no lugar.
+     */
+    fun createView(context: Context, appWidgetId: Int, info: AppWidgetProviderInfo): AppWidgetHostView? =
+        runCatching { host?.createView(context, appWidgetId, info)?.apply { setAppWidget(appWidgetId, info) } }
+            .onFailure { degraded(TAG, "widget $appWidgetId não pôde ser desenhado", it) }
+            .getOrNull()
 
     /**
      * Avisa o widget do tamanho que ele ganhou. A forma com `Bundle` só existe da
@@ -129,11 +168,16 @@ class WidgetHostManager(private val context: Context) {
      * ordenado por app e depois por widget — é a ordem em que o seletor mostra.
      */
     fun installedProviders(): List<WidgetProvider> {
-        val cell = cellPx
+        val manager = widgetManager ?: return emptyList()
+        val cell = runCatching { cellPx }.getOrDefault(0)
+        // Um perfil que recusa a consulta (Secure Folder, perfil administrado)
+        // some da lista; os outros continuam valendo.
         val providers = profiles().flatMap { user ->
-            runCatching { widgetManager.getInstalledProvidersForProfile(user) }.getOrDefault(emptyList())
+            runCatching { manager.getInstalledProvidersForProfile(user) }
+                .onFailure { degraded(TAG, "perfil sem provedores de widget", it) }
+                .getOrDefault(emptyList())
         }
-        return providers.mapNotNull { info -> toProvider(info, cell) }
+        return providers.mapNotNull { info -> runCatching { toProvider(info, cell) }.getOrNull() }
             .sortedWith(
                 compareBy<WidgetProvider, String>(String.CASE_INSENSITIVE_ORDER) { it.appLabel }
                     .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label },
@@ -147,19 +191,23 @@ class WidgetHostManager(private val context: Context) {
     }
 
     private fun profiles(): List<UserHandle> {
-        val manager = context.getSystemService(UserManager::class.java) ?: return emptyList()
-        return runCatching { manager.userProfiles }.getOrDefault(emptyList())
+        val manager = runCatching { context.getSystemService(UserManager::class.java) }.getOrNull()
+            ?: return emptyList()
+        return runCatching { manager.userProfiles }
+            .onFailure { degraded(TAG, "não foi possível listar os perfis", it) }
+            .getOrDefault(emptyList())
     }
 
     private fun toProvider(info: AppWidgetProviderInfo, cell: Int): WidgetProvider? {
         val component = info.provider ?: return null
         val user = info.profile ?: return null
-        val label = runCatching { info.loadLabel(packageManager) }.getOrNull()
+        val label = runCatching { packageManager?.let { info.loadLabel(it) } }.getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?: component.className.substringAfterLast('.')
         val appPackage = component.packageName
         val appLabel = runCatching {
-            packageManager.getApplicationLabel(packageManager.getApplicationInfo(appPackage, 0)).toString()
+            val pm = packageManager ?: return@runCatching null
+            pm.getApplicationLabel(pm.getApplicationInfo(appPackage, 0)).toString()
         }.getOrNull()?.takeIf { it.isNotBlank() } ?: appPackage
         // O que o provedor aceita encolher; sem isso, o tamanho que ele pede de saída.
         val minHeightPx = info.minResizeHeight.takeIf { it > 0 } ?: info.minHeight

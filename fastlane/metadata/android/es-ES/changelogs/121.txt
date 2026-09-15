@@ -1,0 +1,6 @@
+1.1.1 — Estabilidad: ninguna función opcional puede tumbar la pantalla de
+inicio (perfiles del dispositivo, widgets, tarjetas superiores,
+preferencias corruptas, una fuente rechazada). Si algo falla, aparece una
+pantalla con el error para copiarlo en vez de que la app desaparezca, y el
+informe nunca sale del dispositivo. También corrige el arrastre de
+favoritos, el índice lateral y el gesto de búsqueda.

@@ -43,13 +43,15 @@ class OpenMeteoWeatherSource(
     private val cache: WeatherCache,
 ) : WeatherSource {
 
-    private val locationManager = context.getSystemService(LocationManager::class.java)
+    private val locationManager: LocationManager? =
+        runCatching { context.getSystemService(LocationManager::class.java) }.getOrNull()
 
     override val available: Boolean = true
 
-    override fun hasLocationPermission(): Boolean =
+    override fun hasLocationPermission(): Boolean = runCatching {
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
+    }.getOrDefault(false)
 
     override fun snapshot(): Flow<WeatherSnapshot?> = cache.snapshot
 

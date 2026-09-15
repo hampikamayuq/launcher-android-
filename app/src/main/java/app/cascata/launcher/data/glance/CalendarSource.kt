@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
+import app.cascata.launcher.crash.catchQuietly
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+
+private const val TAG = "CascataGlance"
 
 private val PROJECTION = arrayOf(
     CalendarContract.Instances.EVENT_ID,
@@ -38,9 +41,10 @@ private val PROJECTION = arrayOf(
  */
 class CalendarSource(private val context: Context) {
 
-    fun hasPermission(): Boolean =
+    fun hasPermission(): Boolean = runCatching {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
+    }.getOrDefault(false)
 
     /**
      * Emite ao assinar e a cada mudança na agenda (um [ContentObserver], sem
@@ -53,6 +57,9 @@ class CalendarSource(private val context: Context) {
             .conflate()
             .map { query(windowHours, limit) }
             .distinctUntilChanged()
+            // A consulta já devolve vazio ao falhar; isto cobre o resto do
+            // caminho — registrar o observador, ordenar, o que for.
+            .catchQuietly(TAG, "a agenda não respondeu")
     }
 
     private suspend fun query(windowHours: Int, limit: Int): List<CalendarEvent> =
@@ -77,11 +84,13 @@ class CalendarSource(private val context: Context) {
                 // Nenhuma delas vale derrubar a tela inicial: o card fica vazio.
                 emptyList()
             }
-            upcomingEvents(raw, now, limit)
+            runCatching { upcomingEvents(raw, now, limit) }.getOrDefault(emptyList())
         }
 
     /** Emite uma vez de saída e depois a cada notificação do provedor de agenda. */
     private fun changes(): Flow<Unit> = callbackFlow {
+        // A primeira emissão é o que faz a consulta acontecer mesmo sem
+        // observador registrado: sem atualização automática, mas com dado.
         trySend(Unit)
         val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean, uri: Uri?) { trySend(Unit) }

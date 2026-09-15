@@ -6,11 +6,15 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.cascata.launcher.crash.catchEmitting
+import app.cascata.launcher.crash.degraded
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -29,6 +33,9 @@ private val WALLPAPER_TEXT = stringPreferencesKey("wallpaper_text")
 private val TEXT_SHADOW = booleanPreferencesKey("text_shadow")
 private val SEARCH_BAR_VISIBLE = booleanPreferencesKey("search_bar_visible")
 
+/** Tag dos avisos deste arquivo. */
+private const val TAG = "CascataPrefs"
+
 /**
  * Arquivo separado do "cascata" de propósito: assim `reset()` devolve a aparência
  * ao padrão sem encostar em favoritos, apelidos e apps escondidos.
@@ -38,9 +45,20 @@ private val Context.themeDataStore: DataStore<Preferences> by preferencesDataSto
 /** A aparência persistida. Uma chave por campo — nada de blob serializado aqui. */
 class ThemePrefs(private val context: Context) {
 
+    // Um DataStore pode lançar ao ler: arquivo corrompido por um desligamento no
+    // meio da escrita (IOException) ou uma chave gravada com outro tipo por uma
+    // versão anterior (ClassCastException). Quem coleta é a composição da home —
+    // sem isto, uma preferência ilegível derruba a tela inicial; com isto, ela
+    // volta ao padrão. O segundo `catch` cobre a leitura das chaves, que é onde
+    // o tipo errado aparece.
     val settings: Flow<ThemeSettings> = context.themeDataStore.data
+        .catch { error ->
+            degraded(TAG, "aparência ilegível", error)
+            emit(emptyPreferences())
+        }
         .map { it.toSettings() }
         .distinctUntilChanged()
+        .catchEmitting(TAG, "aparência ilegível", ThemeSettings.DEFAULT)
 
     /** Lê, transforma e grava numa transação só: dois toques seguidos não se perdem. */
     suspend fun update(transform: (ThemeSettings) -> ThemeSettings) {

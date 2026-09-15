@@ -112,11 +112,13 @@ class WidgetPickerActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = ThemeSettings.DEFAULT)
             val customFont = remember { app.fontStore.customFile() }
             val wallpaperSeed by produceState<Int?>(null) {
-                app.wallpaperColors.changes()
-                    .onStart { emit(Unit) }
-                    .collect {
-                        value = withContext(Dispatchers.IO) { app.wallpaperColors.primaryArgb() }
-                    }
+                runCatching {
+                    app.wallpaperColors.changes()
+                        .onStart { emit(Unit) }
+                        .collect {
+                            value = withContext(Dispatchers.IO) { app.wallpaperColors.primaryArgb() }
+                        }
+                }
             }
 
             CascataTheme(
@@ -128,7 +130,11 @@ class WidgetPickerActivity : ComponentActivity() {
                 overWallpaper = false,
             ) {
                 PickerScreen(
-                    load = { withContext(Dispatchers.IO) { app.widgetHost.installedProviders() } },
+                    load = {
+                        withContext(Dispatchers.IO) {
+                            runCatching { app.widgetHost.installedProviders() }.getOrDefault(emptyList())
+                        }
+                    },
                     loadPreview = { provider -> app.widgetHost.loadPreview(provider) },
                     onPick = ::add,
                     onBack = { finish() },
@@ -153,7 +159,10 @@ class WidgetPickerActivity : ComponentActivity() {
         // Um de cada vez: o segundo toque enquanto o diálogo do sistema está no
         // ar deixaria o primeiro id alocado sem dono.
         if (pendingId != AppWidgetManager.INVALID_APPWIDGET_ID) return
+        // Sem host o id vem inválido: não há o que ligar nem onde desenhar, e o
+        // toque simplesmente não faz nada em vez de derrubar a tela.
         val id = app.widgetHost.allocateId()
+        if (id == AppWidgetManager.INVALID_APPWIDGET_ID) return
         pendingId = id
         pendingProvider = provider
 

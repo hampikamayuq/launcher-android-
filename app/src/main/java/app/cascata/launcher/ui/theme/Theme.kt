@@ -163,7 +163,12 @@ fun CascataTheme(
     val darkInk = wallpaperInk(settings.wallpaperText, wallpaperDarkText)
     val scheme = if (onWallpaper) colors.onWallpaper(darkInk) else colors
 
-    val family = remember(settings.fontId, customFont) { Fonts.family(settings.fontId, customFont) }
+    // O `context` é o que deixa [Fonts.family] carregar a fonte aqui, fora da
+    // composição: recusada pelo aparelho, ela vira null e o texto sai na fonte do
+    // sistema, em vez de a home morrer ao medir a primeira letra.
+    val family = remember(settings.fontId, customFont, context) {
+        runCatching { Fonts.family(settings.fontId, customFont, context) }.getOrNull()
+    }
     // A tipografia da superfície é a mesma, sem a sombra: ela existe para
     // descolar o texto da foto, e dentro de uma folha opaca só suja as letras.
     val surfaceTypography = remember(family) {

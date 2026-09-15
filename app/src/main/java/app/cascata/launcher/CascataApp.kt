@@ -2,6 +2,7 @@ package app.cascata.launcher
 
 import android.app.Application
 import app.cascata.launcher.crash.CrashReporter
+import app.cascata.launcher.crash.degraded
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
 import app.cascata.launcher.data.backup.BackupManager
@@ -28,6 +29,7 @@ import app.cascata.launcher.data.usage.UsagePrefs
 import app.cascata.launcher.data.usage.UsageSource
 import app.cascata.launcher.data.widgets.WidgetHostManager
 import app.cascata.launcher.data.widgets.WidgetPrefs
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -49,7 +51,27 @@ class CascataApp : Application() {
         CrashReporter.install(this)
     }
 
-    val appScope: CoroutineScope by lazy { CoroutineScope(SupervisorJob()) }
+    /**
+     * O escopo de tudo o que sobrevive a uma tela: o repositório de apps, o
+     * remapeamento de widgets depois de um restore. O [SupervisorJob] impede que
+     * um filho derrube os irmãos, mas **não** impede que uma exceção escapando de
+     * um `launch` chegue ao handler de thread não tratada — e aí o processo morre,
+     * levando a tela inicial junto. O handler abaixo é o que falta: registra,
+     * anota no relatório (para quem não tem `adb`) e deixa o app aberto.
+     */
+    val appScope: CoroutineScope by lazy {
+        CoroutineScope(SupervisorJob() + appExceptionHandler("appScope"))
+    }
+
+    /**
+     * O mesmo tratamento para qualquer escopo de aplicação que venha a existir:
+     * nada que roda fora de uma tela pode derrubar o processo.
+     */
+    private fun appExceptionHandler(name: String) = CoroutineExceptionHandler { _, error ->
+        degraded(TAG, "exceção escapou do escopo $name", error)
+        runCatching { CrashReporter.note(this, name, error) }
+    }
+
     val launcherPrefs: LauncherPrefs by lazy { LauncherPrefs(this) }
     val themePrefs: ThemePrefs by lazy { ThemePrefs(this) }
     val iconPacks: IconPackRepository by lazy { IconPackRepository(this) }
@@ -112,5 +134,10 @@ class CascataApp : Application() {
 
     /** O que o usuário vê como versão; "?" se o próprio pacote não souber dizer. */
     private val appVersion: String
-        get() = packageManager.getPackageInfo(packageName, 0).versionName ?: "?"
+        get() = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }
+            .getOrNull() ?: "?"
+
+    private companion object {
+        const val TAG = "CascataApp"
+    }
 }

@@ -53,6 +53,9 @@ object CrashReporter {
      */
     private val handling = AtomicBoolean(false)
 
+    /** Um aviso não fatal por processo: o arquivo guarda um relatório, não um histórico. */
+    private val noted = AtomicBoolean(false)
+
     /**
      * Chamado uma vez, do `onCreate` da Application. Guarda o handler anterior:
      * tudo o que este aqui não consegue fazer volta para ele.
@@ -79,6 +82,26 @@ object CrashReporter {
     /** Apaga o relatório. O botão das configurações é o único que chama. */
     fun clear(context: Context) {
         runCatching { reportFile(context).delete() }
+    }
+
+    /**
+     * Uma falha que **não** derrubou o processo — um escopo de corrotina da
+     * aplicação que deixou escapar uma exceção, por exemplo. Ela não aparece em
+     * lugar nenhum da tela, e sem isto o único rastro seria o logcat, que quem
+     * usa o app no dia a dia não tem como ler.
+     *
+     * Duas travas para não atrapalhar o relatório que importa: só o primeiro
+     * aviso do processo vira arquivo, e só quando ainda não há relatório
+     * gravado. Uma falha de verdade, que passa por [handle], sobrescreve o
+     * arquivo de qualquer jeito — o rastro fatal sempre ganha do aviso.
+     */
+    fun note(context: Context, source: String, error: Throwable) {
+        if (!noted.compareAndSet(false, true)) return
+        runCatching {
+            val file = reportFile(context)
+            if (file.isFile && file.length() > 0L) return
+            file.writeText(note(source, error))
+        }
     }
 
     private fun handle(
@@ -142,6 +165,20 @@ object CrashReporter {
 
     private fun reportFile(context: Context): File = File(context.filesDir, FILE_NAME)
 
+    /** O mesmo cabeçalho do relatório fatal, com a origem no lugar da thread. */
+    private fun note(source: String, error: Throwable): String = crashReport(
+        timestamp = isoNow(),
+        versionName = BuildConfig.VERSION_NAME,
+        versionCode = BuildConfig.VERSION_CODE,
+        flavor = BuildConfig.FLAVOR,
+        manufacturer = Build.MANUFACTURER,
+        model = Build.MODEL,
+        sdkInt = Build.VERSION.SDK_INT,
+        threadName = source,
+        stackTrace = runCatching { error.stackTraceToString() }.getOrDefault(""),
+        fatal = false,
+    )
+
     private fun report(thread: Thread, error: Throwable): String = crashReport(
         timestamp = isoNow(),
         versionName = BuildConfig.VERSION_NAME,
@@ -203,7 +240,10 @@ internal fun crashReport(
     sdkInt: Int,
     threadName: String,
     stackTrace: String,
+    /** `false` num aviso não fatal: o app continuou aberto, e quem lê precisa saber. */
+    fatal: Boolean = true,
 ): String = buildString {
+    if (!fatal) appendLine("Aviso: o app seguiu aberto com um recurso degradado.")
     appendLine("Cascata $versionName ($versionCode, $flavor)")
     appendLine("Quando: $timestamp")
     appendLine("Aparelho: $manufacturer $model")

@@ -390,7 +390,10 @@ fun HomeScreen(
             val favoriteItems = if (
                 homeItems && favoritesStyle == FavoritesStyle.LIST && state.favorites.isNotEmpty()
             ) 1 else 0
-            val widgetItems = if (homeItems && widgetLayout.slots.isNotEmpty()) 1 else 0
+            // `available` é falso em aparelho sem widgets: aí o layout gravado
+            // continua no disco, mas nem o item da lista existe.
+            val widgetItems =
+                if (homeItems && widgetHost.available && widgetLayout.slots.isNotEmpty()) 1 else 0
             val leadingItems = favoriteItems + widgetItems
 
             Box(modifier = Modifier.fillMaxSize()) {
