@@ -24,6 +24,17 @@ Todas sob **SIL Open Font License 1.1**; texto integral em `licenses/fonts/`.
 | Sora | The Sora Project Authors | `sora.ttf` (variável, eixo `wght`) |
 | Atkinson Hyperlegible | Braille Institute of America | `atkinson_regular.ttf`, `atkinson_bold.ttf` |
 
+## Só nas prévias de loja (fora do APK)
+
+| Item | Licença | Uso |
+|---|---|---|
+| Path data dos Material Icons (google/material-design-icons) | Apache-2.0 | os símbolos brancos dos ícones dos apps fictícios das fotos da loja |
+
+Os `d="..."` dos SVGs de 24x24 estão transcritos em
+`app/src/screenshotTest/java/app/cascata/launcher/preview/DemoIcons.kt`. Esse
+source set é só do renderizador de prévias (layoutlib, na JVM): nada dele entra
+em APK nenhum, nem na `lite` nem na `full`.
+
 ## Convenções abertas (sem código de terceiros)
 
 - **Pacotes de ícones**: o app lê o formato de `appfilter.xml` e responde aos

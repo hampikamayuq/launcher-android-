@@ -1,9 +1,6 @@
 package app.cascata.launcher.preview
 
 import android.content.ComponentName
-import android.content.pm.ShortcutInfo
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
 import android.os.Process
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLocale
@@ -11,8 +8,6 @@ import app.cascata.launcher.HomeList
 import app.cascata.launcher.Row
 import app.cascata.launcher.rowsForLetter
 import app.cascata.launcher.data.AppEntry
-import app.cascata.launcher.data.IconSource
-import app.cascata.launcher.data.LoadedIcon
 import app.cascata.launcher.data.appEntry
 import app.cascata.launcher.data.notifications.AppNotification
 import app.cascata.launcher.data.notifications.NotificationAction
@@ -272,53 +267,3 @@ internal val DEMO_CALCULATION = app.cascata.launcher.data.search.CalculationResu
     value = BigDecimal("84"),
     formatted = "84",
 )
-
-/** Doze cores, uma por app, sempre a mesma para o mesmo rótulo. */
-private val ICON_COLORS = listOf(
-    0xFF4C6FBF, 0xFF2F9E6E, 0xFFCC7A2B, 0xFF9A5BC4,
-    0xFFC9525A, 0xFF2E8FA8, 0xFF7A8B3C, 0xFFB4526E,
-    0xFF5B6BA8, 0xFF3F9E8C, 0xFFA9762E, 0xFF6E6EAA,
-).map { it.toInt() }
-
-/**
- * Ícones fictícios: um disco de duas tonalidades por app. Não há LauncherApps
- * aqui — é exatamente por isso que os composables pedem [IconSource] e não o
- * repositório inteiro.
- */
-internal object DemoIcons : IconSource {
-
-    override suspend fun icon(entry: AppEntry): LoadedIcon =
-        LoadedIcon(disc(colorOf(entry.label)), fromPack = true)
-
-    /** Nenhuma prévia mostra atalhos: eles exigiriam um `ShortcutInfo` de verdade. */
-    override suspend fun shortcutIcon(shortcut: ShortcutInfo): Drawable? = null
-
-    /**
-     * A cor sai da posição do app na lista do idioma, não de um hash: assim dois
-     * vizinhos nunca saem iguais, e o mesmo app tem a mesma cor em todas as fotos.
-     */
-    private val byLabel: Map<String, Int> = buildMap {
-        listOf(PT, EN, ES).forEach { demo ->
-            demo.apps.forEachIndexed { index, label -> put(label, ICON_COLORS[index % ICON_COLORS.size]) }
-        }
-    }
-
-    private fun colorOf(label: String): Int = byLabel[label]
-        ?: ICON_COLORS[(label.hashCode() and Int.MAX_VALUE) % ICON_COLORS.size]
-
-    private fun disc(argb: Int): Drawable = GradientDrawable(
-        GradientDrawable.Orientation.TL_BR,
-        intArrayOf(lighten(argb), argb),
-    ).apply {
-        shape = GradientDrawable.OVAL
-    }
-
-    /** Clareia a cor para o alto do disco — o degradê dá volume ao círculo chapado. */
-    private fun lighten(argb: Int): Int {
-        fun channel(shift: Int): Int {
-            val value = (argb shr shift) and 0xFF
-            return (value + (255 - value) * 35 / 100) and 0xFF
-        }
-        return (0xFF shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
-    }
-}
