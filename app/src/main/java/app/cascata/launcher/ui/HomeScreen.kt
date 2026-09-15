@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -158,19 +159,32 @@ fun HomeScreen(
     var searchFocused by remember { mutableStateOf(false) }
     val searchVisible = searchBarVisible || searchOpen || state.query.isNotEmpty()
 
+    // Cada pedido do gesto é um número novo, e não só "aberto": com o campo já
+    // em cena e sem foco (o teclado foi fechado pelo botão de voltar), repetir o
+    // gesto tem de trazer o teclado de volta, e um booleano que já é `true` não
+    // reinicia efeito nenhum.
+    var focusRequest by remember { mutableIntStateOf(0) }
+
     /** O gesto pede o campo; quem o foca é o efeito abaixo, quando ele existir. */
-    val openSearch = { searchOpen = true }
+    val openSearch = {
+        searchOpen = true
+        focusRequest++
+        Unit
+    }
     val swipeUp = rememberSwipeUpToSearch(openSearch)
 
     // O campo entra por animação: a primeira tentativa de foco cai antes de ele
-    // existir, então insistimos por alguns quadros.
-    LaunchedEffect(searchOpen) {
-        if (!searchOpen) return@LaunchedEffect
+    // existir, e aí `requestFocus` lança. Insistimos por alguns quadros — e quem
+    // diz que deu certo é o próprio campo (`searchFocused`), não a chamada: ela
+    // volta sem erro mesmo quando o nó ainda não está em cena para receber foco.
+    LaunchedEffect(focusRequest) {
+        if (focusRequest == 0 || !searchOpen) return@LaunchedEffect
         repeat(FOCUS_ATTEMPTS) {
-            if (runCatching { searchFocus.requestFocus() }.isSuccess) {
+            if (searchFocused) {
                 keyboard?.show()
                 return@LaunchedEffect
             }
+            runCatching { searchFocus.requestFocus() }
             withFrameNanos { }
         }
     }

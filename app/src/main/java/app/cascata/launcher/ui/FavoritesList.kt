@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -132,87 +133,120 @@ fun FavoritesList(
         )
 
         favorites.forEach { entry ->
-            val dragging = drag.key == entry.key
+            // A identidade da linha é o app, não a posição: reordenar move o nó
+            // em vez de recriá-lo. Sem isto, a troca de posição reinicia o
+            // `pointerInput` desta linha e o arraste em curso é cancelado no
+            // primeiro passo — o dedo continua andando e nada mais se move.
+            key(entry.key) {
+                val dragging = drag.key == entry.key
 
-            /** Fim do gesto: ou a ordem já mudou, ou isto foi um toque longo parado. */
-            fun finish(slop: Float) {
-                if (drag.key == entry.key && drag.travel <= slop) longPress(entry)
-                drag.stop()
-            }
+                /** Fim do gesto: ou a ordem já mudou, ou isto foi um toque longo parado. */
+                fun finish(slop: Float) {
+                    if (drag.key == entry.key && drag.travel <= slop) longPress(entry)
+                    drag.stop()
+                }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onSizeChanged { if (it.height > 0) rowHeight = it.height }
-                    .zIndex(if (dragging) 1f else 0f)
-                    .graphicsLayer {
-                        if (dragging) {
-                            translationY = drag.offset
-                            scaleX = 1.03f
-                            scaleY = 1.03f
-                        }
-                    }
-                    // Antes do `combinedClickable`: na fusão de semânticas quem
-                    // vem primeiro fica com a ação, e a dele é vazia de propósito.
-                    .semantics {
-                        onLongClick(optionsLabel) {
-                            onLongPress(entry)
-                            true
-                        }
-                    }
-                    .combinedClickable(
-                        role = Role.Button,
-                        onClick = { onLaunch(entry) },
-                        // O toque longo é do detector abaixo; aqui só evitamos
-                        // que ele termine virando um toque simples (e abrindo o app).
-                        onLongClick = {},
-                    )
-                    .pointerInput(entry.key) {
-                        val slop = viewConfiguration.touchSlop
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                drag.key = entry.key
-                                drag.index = current.indexOfFirst { it.key == entry.key }
-                                drag.offset = 0f
-                                drag.travel = 0f
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            },
-                            onDragEnd = { finish(slop) },
-                            onDragCancel = { finish(slop) },
-                        ) { change, delta ->
-                            change.consume()
-                            if (drag.index < 0) return@detectDragGesturesAfterLongPress
-                            drag.travel += abs(delta.y)
-                            drag.offset += delta.y
-                            val slot = rowHeight + gapPx
-                            if (slot <= 0f) return@detectDragGesturesAfterLongPress
-                            val steps = (drag.offset / slot).roundToInt()
-                            val to = (drag.index + steps).coerceIn(0, current.lastIndex)
-                            if (to != drag.index) {
-                                move(drag.index, to)
-                                drag.offset -= (to - drag.index) * slot
-                                drag.index = to
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            } else {
-                                // Nas pontas o dedo continua andando e a linha não.
-                                drag.offset = drag.offset.coerceIn(-slot, slot)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { if (it.height > 0) rowHeight = it.height }
+                        .zIndex(if (dragging) 1f else 0f)
+                        .graphicsLayer {
+                            if (dragging) {
+                                translationY = drag.offset
+                                scaleX = 1.03f
+                                scaleY = 1.03f
                             }
                         }
-                    }
-                    .padding(vertical = density.rowPadding),
-            ) {
-                AppIcon(entry = entry, repository = repository, size = density.iconSize)
-                Spacer(Modifier.width(14.dp))
-                Text(
-                    text = entry.label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
+                        // Antes do `combinedClickable`: na fusão de semânticas quem
+                        // vem primeiro fica com a ação, e a dele é vazia de propósito.
+                        .semantics {
+                            onLongClick(optionsLabel) {
+                                onLongPress(entry)
+                                true
+                            }
+                        }
+                        .combinedClickable(
+                            role = Role.Button,
+                            onClick = { onLaunch(entry) },
+                            // O toque longo é do detector abaixo; aqui só evitamos
+                            // que ele termine virando um toque simples (e abrindo o app).
+                            onLongClick = {},
+                        )
+                        .pointerInput(entry.key) {
+                            val slop = viewConfiguration.touchSlop
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    drag.key = entry.key
+                                    drag.index = current.indexOfFirst { it.key == entry.key }
+                                    drag.offset = 0f
+                                    drag.travel = 0f
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                onDragEnd = { finish(slop) },
+                                onDragCancel = { finish(slop) },
+                            ) { change, delta ->
+                                change.consume()
+                                if (drag.index < 0) return@detectDragGesturesAfterLongPress
+                                drag.travel += abs(delta.y)
+                                drag.offset += delta.y
+                                // `rowHeight` só existe depois da primeira medida; o
+                                // espaçamento sozinho daria um passo de dois dp e
+                                // qualquer tremida jogaria o favorito para a ponta.
+                                if (rowHeight <= 0) return@detectDragGesturesAfterLongPress
+                                val slot = rowHeight + gapPx
+                                val to = favoriteDropIndex(
+                                    offsetPx = drag.offset,
+                                    slotPx = slot,
+                                    fromIndex = drag.index,
+                                    lastIndex = current.lastIndex,
+                                )
+                                if (to != drag.index) {
+                                    move(drag.index, to)
+                                    drag.offset -= (to - drag.index) * slot
+                                    drag.index = to
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                } else {
+                                    // Nas pontas o dedo continua andando e a linha não.
+                                    drag.offset = drag.offset.coerceIn(-slot, slot)
+                                }
+                            }
+                        }
+                        .padding(vertical = density.rowPadding),
+                ) {
+                    AppIcon(entry = entry, repository = repository, size = density.iconSize)
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = entry.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                }
             }
         }
     }
+}
+
+/**
+ * Para onde vai o favorito que está sendo arrastado: quantos passos inteiros de
+ * linha o dedo já andou ([offsetPx] sobre [slotPx]), somados ao índice de onde
+ * ele saiu e presos dentro da lista.
+ *
+ * Altura de linha ainda não medida — [slotPx] zero ou negativo — devolve o
+ * índice de origem: sem o passo, um arraste de um pixel mandaria o favorito
+ * para a ponta.
+ */
+internal fun favoriteDropIndex(
+    offsetPx: Float,
+    slotPx: Float,
+    fromIndex: Int,
+    lastIndex: Int,
+): Int {
+    if (slotPx <= 0f || fromIndex < 0 || lastIndex < 0) return fromIndex
+    val steps = (offsetPx / slotPx).roundToInt()
+    return (fromIndex + steps).coerceIn(0, lastIndex)
 }

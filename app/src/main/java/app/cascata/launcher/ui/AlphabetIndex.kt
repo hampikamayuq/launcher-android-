@@ -71,10 +71,6 @@ private val BUBBLE_SIZE = 56.dp
  */
 private val BUBBLE_SHIFT = WAVE_AMPLITUDE + BUBBLE_SIZE
 
-/** Nenhum alvo sob o dedo. O alvo 0 é a estrela; as letras vêm de 1 em diante. */
-private const val NO_TARGET = -1
-private const val STAR_TARGET = 0
-
 /** O que a onda precisa saber entre um quadro e o outro, sem recompor nada. */
 private class IndexTouch {
     /** Altura da coluna, para converter alvo em posição e posição em alvo. */
@@ -135,11 +131,13 @@ fun AlphabetIndex(
     // A prévia entra pelo mesmo caminho do dedo, sem dedo nenhum: o alvo é fixo
     // e a "posição do dedo" é o meio da letra pedida.
     val previewTarget = previewLetter?.let { letters.indexOf(it) }?.takeIf { it >= 0 }?.plus(1)
-    val target = previewTarget ?: touch.target
+    // A lista de letras encolhe quando um app some (desinstalado, escondido,
+    // renomeado): um alvo guardado do arraste anterior apontaria além dela.
+    val target = (previewTarget ?: touch.target).takeIf { it <= letters.size } ?: NO_TARGET
 
     /** Onde o dedo está — ou onde ele estaria, na prévia. Lido dentro das camadas. */
     fun fingerY(): Float = if (previewTarget != null) {
-        targetCenter(previewTarget, letters.size, touch.height)
+        indexTargetCenter(previewTarget, touch.height, letters.size)
     } else {
         touch.fingerY
     }
@@ -159,12 +157,6 @@ fun AlphabetIndex(
         else -> 0f
     }
 
-    fun targetAt(y: Float): Int {
-        if (touch.height <= 0) return NO_TARGET
-        val slot = touch.height.toFloat() / (letters.size + 1)
-        return (y / slot).toInt().coerceIn(0, letters.size)
-    }
-
     /** Um alvo novo sob o dedo: avisa a home e devolve o toquinho de resposta. */
     fun moveTo(next: Int) {
         if (next == NO_TARGET || next == touch.target) return
@@ -181,16 +173,20 @@ fun AlphabetIndex(
                 .onSizeChanged { touch.height = it.height }
                 .semantics { contentDescription = indexLabel }
                 .pointerInput(letters, style) {
+                    // O detector não avisa quando o próprio bloco é reiniciado no
+                    // meio de um arraste (a lista de letras mudou): sem isto o
+                    // alvo ficaria preso, com a bolha em cena e a lista filtrada.
+                    touch.target = NO_TARGET
                     detectVerticalDragGestures(
                         onDragStart = { offset ->
                             touch.fingerY = offset.y
-                            moveTo(targetAt(offset.y))
+                            moveTo(indexTargetAt(offset.y, touch.height, letters.size))
                         },
                         onDragEnd = { touch.target = NO_TARGET },
                         onDragCancel = { touch.target = NO_TARGET },
                     ) { change, _ ->
                         touch.fingerY = change.position.y
-                        moveTo(targetAt(change.position.y))
+                        moveTo(indexTargetAt(change.position.y, touch.height, letters.size))
                     }
                 },
             verticalArrangement = Arrangement.SpaceEvenly,
@@ -236,7 +232,7 @@ fun AlphabetIndex(
                         .graphicsLayer {
                             val strength = waveStrength()
                             if (strength <= 0f) return@graphicsLayer
-                            val center = targetCenter(index + 1, letters.size, touch.height)
+                            val center = indexTargetCenter(index + 1, touch.height, letters.size)
                             val dx = waveOffset(center - fingerY(), amplitudePx * strength, sigmaPx)
                             translationX = dx
                             // O pico vale a amplitude inteira: a fração que falta
@@ -291,15 +287,4 @@ fun AlphabetIndex(
             }
         }
     }
-}
-
-/**
- * O meio do alvo [target] (0 = estrela) numa coluna de [letters] letras e
- * [height] pixels de altura. Os alvos dividem a coluna em fatias iguais, que é
- * o que `Arrangement.SpaceEvenly` desenha e o que o toque assume.
- */
-private fun targetCenter(target: Int, letters: Int, height: Int): Float {
-    if (height <= 0) return 0f
-    val slot = height.toFloat() / (letters + 1)
-    return slot * (target + 0.5f)
 }
