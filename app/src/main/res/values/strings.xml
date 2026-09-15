@@ -356,4 +356,19 @@
     <string name="about_version">Versão %1$s</string>
     <string name="about_licenses">Fontes e bibliotecas de terceiros</string>
     <string name="about_licenses_body">Outfit, Sora e Atkinson Hyperlegible — SIL Open Font License 1.1.\n\nJetpack Compose, AndroidX e a biblioteca padrão do Kotlin — Apache License 2.0.</string>
+
+    <!--
+      Relatório de falha local. O texto do erro nunca sai do aparelho sozinho:
+      só existe em `filesDir/ultima-falha.txt` e no que o usuário resolver
+      compartilhar.
+    -->
+    <string name="crash_title">O Cascata fechou</string>
+    <string name="crash_explanation">O relatório abaixo fica só neste aparelho — nada é enviado a lugar nenhum. Se puder, mande-o a quem mantém o app: é com ele que a falha vira conserto.</string>
+    <string name="crash_copy">Copiar</string>
+    <string name="crash_copied">Relatório copiado</string>
+    <string name="crash_share">Compartilhar</string>
+    <string name="crash_close">Fechar</string>
+    <string name="crash_last_report">Relatório da última falha</string>
+    <string name="crash_clear">Apagar relatório</string>
+    <string name="crash_cleared">Relatório apagado</string>
 </resources>

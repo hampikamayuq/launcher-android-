@@ -350,4 +350,14 @@
     <string name="about_version">Version %1$s</string>
     <string name="about_licenses">Third-party sources and libraries</string>
     <string name="about_licenses_body">Outfit, Sora, and Atkinson Hyperlegible — SIL Open Font License 1.1.\n\nJetpack Compose, AndroidX, and the Kotlin standard library — Apache License 2.0.</string>
+
+    <string name="crash_title">Cascata closed</string>
+    <string name="crash_explanation">The report below stays on this device — nothing is sent anywhere. If you can, send it to whoever maintains the app: it\'s what turns the crash into a fix.</string>
+    <string name="crash_copy">Copy</string>
+    <string name="crash_copied">Report copied</string>
+    <string name="crash_share">Share</string>
+    <string name="crash_close">Close</string>
+    <string name="crash_last_report">Last crash report</string>
+    <string name="crash_clear">Delete report</string>
+    <string name="crash_cleared">Report deleted</string>
 </resources>

@@ -361,4 +361,14 @@
     <string name="about_version">Versión %1$s</string>
     <string name="about_licenses">Fuentes y bibliotecas de terceros</string>
     <string name="about_licenses_body">Outfit, Sora y Atkinson Hyperlegible — SIL Open Font License 1.1.\n\nJetpack Compose, AndroidX y la biblioteca estándar de Kotlin — Apache License 2.0.</string>
+
+    <string name="crash_title">Cascata se cerró</string>
+    <string name="crash_explanation">El informe de abajo se queda solo en este dispositivo: no se envía a ninguna parte. Si puedes, mándaselo a quien mantiene la app: es lo que convierte el fallo en un arreglo.</string>
+    <string name="crash_copy">Copiar</string>
+    <string name="crash_copied">Informe copiado</string>
+    <string name="crash_share">Compartir</string>
+    <string name="crash_close">Cerrar</string>
+    <string name="crash_last_report">Informe del último fallo</string>
+    <string name="crash_clear">Borrar el informe</string>
+    <string name="crash_cleared">Informe borrado</string>
 </resources>

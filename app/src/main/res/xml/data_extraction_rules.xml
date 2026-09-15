@@ -6,6 +6,12 @@
 
   `fonts` é a fonte que o usuário importou: sem ela o tema restaurado cai na
   fonte do sistema, então acompanha as preferências nos dois canais.
+
+  Os dois canais são listas de inclusão: nada fora delas é copiado, e por isso o
+  relatório de falha (`filesDir/ultima-falha.txt`) não sobe para a nuvem nem
+  chega ao aparelho seguinte — um rastro de erro é do aparelho onde ele
+  aconteceu. Um `exclude` explícito seria redundante e o lint o recusa ("not in
+  an included path"); quem um dia alargar uma inclusão é que precisa excluí-lo.
 -->
 <data-extraction-rules>
     <cloud-backup>

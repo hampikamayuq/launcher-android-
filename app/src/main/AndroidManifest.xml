@@ -135,6 +135,23 @@
             android:theme="@style/Theme.Cascata" />
 
         <!--
+          Relatório de falha. Vive num processo próprio (`:crash`) porque o
+          processo que quebrou já está morrendo quando ela sobe — no mesmo
+          processo não haveria nada de pé para desenhar a tela. Não exportada
+          (só o próprio app a abre), fora dos recentes (não é uma tela para
+          voltar depois) e com o tema opaco: o da home é transparente sobre o
+          papel de parede, e um relatório de erro precisa de fundo.
+        -->
+        <activity
+            android:name=".crash.CrashActivity"
+            android:process=":crash"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:label="@string/crash_title"
+            android:theme="@style/Theme.Cascata" />
+
+        <!--
           Acesso a notificações. O serviço é exportado porque quem faz bind nele é
           o sistema, e a permissão BIND_NOTIFICATION_LISTENER_SERVICE garante que
           só ele consegue. Nada acontece até o usuário conceder o acesso na tela do

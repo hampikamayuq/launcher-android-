@@ -46,6 +46,20 @@ sandbox do Android — nenhum outro app lê):
 - o último clima consultado (edição `full`), em cache;
 - a fonte importada pelo usuário, como arquivo, se houver.
 
+Fora do DataStore, no mesmo armazenamento privado do app, há um único arquivo:
+
+- **o relatório da última falha**, em `filesDir/ultima-falha.txt`. Ele só passa
+  a existir se o app fechar sozinho, e contém o rastro do erro (stack trace),
+  a versão e a edição do app, o fabricante e o modelo do aparelho, a versão do
+  Android e o nome da thread. **Nunca é enviado a lugar nenhum**: quando a
+  falha acontece, o app abre uma tela mostrando esse texto, e cabe ao usuário
+  decidir se copia ou compartilha o relatório com quem mantém o app — o
+  compartilhamento é sempre um toque explícito, pelo seletor do sistema. Só a
+  última falha fica guardada (cada nova sobrescreve a anterior), o arquivo não
+  entra em nenhum dos backups do Android (ver a seção [Backup](#backup)), e
+  Configurações → Sobre → "Relatório da última falha" permite ler e apagar o
+  arquivo a qualquer momento.
+
 ## O que nunca é gravado
 
 - **Notificações.** Título, texto, chave e horário existem só na memória do
@@ -95,7 +109,11 @@ O Cascata tem duas formas de backup, independentes:
 2. **Backup do próprio Android** (`cloud-backup` e `device-transfer`,
    declarados em `res/xml/data_extraction_rules.xml`). Os dois canais incluem
    apenas as preferências (DataStore) e a fonte importada — o mesmo escopo
-   pequeno nos dois, de propósito. Se e como isso sobe para uma nuvem depende
+   pequeno nos dois, de propósito. Como as duas listas (e a do
+   `res/xml/backup_rules.xml`, usada no Android 11 e anteriores) são de
+   inclusão, tudo o que não está nelas fica de fora — inclusive o relatório de
+   falha, que portanto não sobe para nuvem nenhuma nem chega ao aparelho
+   seguinte: um rastro de erro é do aparelho onde ele aconteceu. Se e como isso sobe para uma nuvem depende
    inteiramente da conta e das configurações de backup do próprio usuário no
    Android; o Cascata não controla nem vê esse caminho.
 
@@ -104,8 +122,12 @@ O Cascata tem duas formas de backup, independentes:
 Não há login, não há SDK de atribuição, Firebase, Play Services ou qualquer
 biblioteca de coleta — a lista completa de dependências está em
 [`docs/terceiros.md`](terceiros.md), e nenhuma delas fala com um servidor.
-Erros de execução ficam no Logcat do próprio Android, como em qualquer app;
-nada é reunido, enviado ou lido pelos autores. Bugs chegam pelas
+Erros de execução ficam no Logcat do próprio Android, como em qualquer app,
+e — desde que o launcher ganhou a tela de relatório de falha — também num
+arquivo local, `filesDir/ultima-falha.txt`, descrito acima. Isso é o oposto de
+um relatório de erros remoto: o texto é mostrado a quem usa, fica no aparelho e
+só sai dele se a própria pessoa resolver compartilhá-lo. Nada é reunido,
+enviado ou lido pelos autores. Bugs chegam pelas
 [issues do repositório](https://github.com/hampikamayuq/launcher-android-/issues),
 contados por quem os encontrou.
 

@@ -279,7 +279,7 @@ private fun SettingsScreen(
                 widgetHost = widgetHost,
                 onMessage = message,
             )
-            AboutSection()
+            AboutSection(onMessage = message)
         }
     }
 }

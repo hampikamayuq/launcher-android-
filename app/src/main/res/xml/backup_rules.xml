@@ -2,6 +2,13 @@
 <!--
   Android <= 11. Preferências (favoritos, ordem e aparência) e a fonte importada
   pelo usuário — um tema sem a fonte dele volta errado do backup. Nada de uso.
+
+  A lista é de inclusão: o que não está aqui não é copiado. É o que já mantém o
+  relatório de falha (`filesDir/ultima-falha.txt`) fora do backup, e é assim que
+  tem de ser — um rastro de erro descreve o aparelho onde ele aconteceu e não faz
+  sentido nenhum viajar para o aparelho seguinte. Um `exclude` para ele seria
+  redundante e o lint o recusa ("not in an included path"): quem acrescentar aqui
+  uma inclusão mais larga (`path="."`, por exemplo) é que precisa excluí-lo.
 -->
 <full-backup-content>
     <include domain="file" path="datastore" />

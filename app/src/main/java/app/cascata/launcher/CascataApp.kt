@@ -1,6 +1,7 @@
 package app.cascata.launcher
 
 import android.app.Application
+import app.cascata.launcher.crash.CrashReporter
 import app.cascata.launcher.data.AppRepository
 import app.cascata.launcher.data.LauncherPrefs
 import app.cascata.launcher.data.backup.BackupManager
@@ -36,6 +37,17 @@ import kotlinx.coroutines.SupervisorJob
  * até a primeira tela.
  */
 class CascataApp : Application() {
+
+    /**
+     * Antes de qualquer outra coisa: um launcher que quebra deixa o aparelho sem
+     * tela inicial, e sem isto a falha some sem deixar rastro no aparelho de quem
+     * a viu. Instalar o handler não lê disco nem cria nenhuma das dependências
+     * abaixo — o custo até a primeira tela continua o mesmo.
+     */
+    override fun onCreate() {
+        super.onCreate()
+        CrashReporter.install(this)
+    }
 
     val appScope: CoroutineScope by lazy { CoroutineScope(SupervisorJob()) }
     val launcherPrefs: LauncherPrefs by lazy { LauncherPrefs(this) }
