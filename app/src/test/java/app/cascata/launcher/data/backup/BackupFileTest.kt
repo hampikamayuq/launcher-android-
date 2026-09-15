@@ -159,6 +159,28 @@ class BackupFileTest {
         assertTrue(decoded.favorites.isEmpty())
     }
 
+    /**
+     * Compatibilidade: um `.cascata-backup` escrito antes da Fase 10 não traz
+     * os campos novos do tema. Continua na versão 1 e o tema entra com os
+     * padrões de agora, sem que o arquivo inteiro se perca.
+     */
+    @Test
+    fun `backup anterior a fase 10 carrega o tema com os padroes novos`() {
+        val text = """
+            {"format":"cascata-backup","version":1,
+             "payload":{"favorites":["com.a/.Main#0"],
+                        "theme":{"darkMode":"DARK","fontId":"sora","clockStyle":"BIG"}}}
+        """.trimIndent()
+        val decoded = BackupFile.decode(text).getOrThrow()
+        assertEquals(ThemeSettings.DEFAULT.favoritesStyle, decoded.theme.favoritesStyle)
+        assertEquals(ThemeSettings.DEFAULT.indexStyle, decoded.theme.indexStyle)
+        assertEquals(ThemeSettings.DEFAULT.wallpaperText, decoded.theme.wallpaperText)
+        assertEquals(ThemeSettings.DEFAULT.textShadow, decoded.theme.textShadow)
+        assertEquals(ThemeSettings.DEFAULT.searchBarVisible, decoded.theme.searchBarVisible)
+        assertEquals("sora", decoded.theme.fontId)
+        assertEquals(listOf("com.a/.Main#0"), decoded.favorites)
+    }
+
     @Test
     fun `valores fora da faixa chegam corrigidos`() {
         val text = """

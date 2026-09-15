@@ -82,6 +82,16 @@ class HomeActivity : ComponentActivity() {
                     }
             }
 
+            // Se o papel de parede aguenta texto escuro por cima. Mesmo Flow da
+            // cor: uma troca de fundo muda as duas respostas de uma vez.
+            val wallpaperDarkText by produceState<Boolean?>(null) {
+                app.wallpaperColors.changes()
+                    .onStart { emit(Unit) }
+                    .collect {
+                        value = withContext(Dispatchers.IO) { app.wallpaperColors.supportsDarkText() }
+                    }
+            }
+
             // Os widgets colocados. Lista vazia é o caso normal de quem nunca
             // adicionou nenhum: a área nem chega a virar item da lista.
             val widgetLayout by app.widgetPrefs.layout
@@ -111,6 +121,11 @@ class HomeActivity : ComponentActivity() {
                 settings = settings,
                 customFont = customFont,
                 wallpaperSeed = wallpaperSeed,
+                wallpaperDarkText = wallpaperDarkText,
+                // As boas-vindas têm fundo opaco próprio; só a home fica sobre
+                // o papel de parede. Enquanto a preferência não chegou (null)
+                // nada é desenhado, então o valor daqui não importa.
+                overWallpaper = onboardingDone != false,
             ) {
                 when (onboardingDone) {
                     // Ainda lendo a preferência: nem home nem boas-vindas.

@@ -1,8 +1,10 @@
 package app.cascata.launcher.data.theme
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ThemeSettingsTest {
@@ -57,6 +59,39 @@ class ThemeSettingsTest {
             ClockStyle.TWO_LINE,
             ThemeSettings(clockStyle = ClockStyle.TWO_LINE).coerced().clockStyle,
         )
+    }
+
+    /**
+     * Os padrões da Fase 10: a home nasce sobre o papel de parede, na Nunito,
+     * com favoritos em lista, índice em onda, sombra no texto e sem campo de
+     * busca fixo. A UI da home conta com estes valores.
+     */
+    @Test
+    fun `os padroes da fase 10`() {
+        val padrao = ThemeSettings.DEFAULT
+        assertEquals(0f, padrao.backgroundOpacity, 0f)
+        assertEquals("nunito", padrao.fontId)
+        assertEquals(FavoritesStyle.LIST, padrao.favoritesStyle)
+        assertEquals(IndexStyle.WAVE, padrao.indexStyle)
+        assertEquals(WallpaperText.AUTO, padrao.wallpaperText)
+        assertTrue(padrao.textShadow)
+        assertFalse(padrao.searchBarVisible)
+    }
+
+    @Test
+    fun `os campos novos passam intactos pelo coerced`() {
+        val settings = ThemeSettings(
+            favoritesStyle = FavoritesStyle.ROW,
+            indexStyle = IndexStyle.STRAIGHT,
+            wallpaperText = WallpaperText.DARK,
+            textShadow = false,
+            searchBarVisible = true,
+        ).coerced()
+        assertEquals(FavoritesStyle.ROW, settings.favoritesStyle)
+        assertEquals(IndexStyle.STRAIGHT, settings.indexStyle)
+        assertEquals(WallpaperText.DARK, settings.wallpaperText)
+        assertFalse(settings.textShadow)
+        assertTrue(settings.searchBarVisible)
     }
 
     @Test

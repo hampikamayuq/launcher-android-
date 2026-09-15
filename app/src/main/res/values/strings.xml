@@ -75,6 +75,19 @@
     <string name="density_default">Padrão</string>
     <string name="density_comfortable">Confortável</string>
     <string name="font_scale">Tamanho do texto</string>
+    <string name="favorites_style">Favoritos</string>
+    <string name="favorites_style_list">Lista</string>
+    <string name="favorites_style_row">Linha</string>
+    <string name="index_style">Índice lateral</string>
+    <string name="index_style_wave">Onda</string>
+    <string name="index_style_straight">Reto</string>
+    <string name="wallpaper_text">Texto sobre o papel de parede</string>
+    <string name="wallpaper_text_auto">Automático</string>
+    <string name="wallpaper_text_light">Claro</string>
+    <string name="wallpaper_text_dark">Escuro</string>
+    <string name="text_shadow">Sombra no texto</string>
+    <string name="search_bar_visible">Campo de busca sempre visível</string>
+    <string name="search_bar_visible_hint">Desligado, ele aparece no gesto de subir ou quando você começa a buscar.</string>
 
     <string name="section_glance">At a glance</string>
     <string name="clock_style">Relógio</string>

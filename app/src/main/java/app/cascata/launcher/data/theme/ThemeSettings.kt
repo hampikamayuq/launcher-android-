@@ -14,6 +14,19 @@ enum class Density { COMPACT, DEFAULT, COMFORTABLE }
 /** Os quatro desenhos do relógio do topo. [BASIC] é o que existia antes da Fase 3. */
 enum class ClockStyle { BASIC, BIG, TWO_LINE, ANALOG }
 
+/** Favoritos empilhados numa coluna ([LIST]) ou lado a lado numa fileira ([ROW]). */
+enum class FavoritesStyle { LIST, ROW }
+
+/** O índice alfabético da lateral: em onda ([WAVE]) ou numa coluna reta ([STRAIGHT]). */
+enum class IndexStyle { WAVE, STRAIGHT }
+
+/**
+ * Cor do texto quando ele fica direto sobre o papel de parede. [AUTO] pergunta
+ * ao sistema (ver `WallpaperColorsSource.supportsDarkText`); as outras duas são
+ * a palavra final do usuário, para quando o palpite do sistema erra.
+ */
+enum class WallpaperText { AUTO, LIGHT, DARK }
+
 /** Limites da escala de fonte: abaixo disso não se lê, acima disso a lista vira duas linhas. */
 const val MIN_FONT_SCALE = 0.85f
 const val MAX_FONT_SCALE = 1.30f
@@ -27,12 +40,15 @@ data class ThemeSettings(
     val darkMode: DarkMode = DarkMode.SYSTEM,
     val colorSource: ColorSource = ColorSource.SYSTEM,
     val accentArgb: Int = 0xFF2E5AAC.toInt(),
-    /** Alfa da superfície sobre o wallpaper, 0f..1f. */
-    val backgroundOpacity: Float = 0.55f,
+    /**
+     * Alfa da superfície sobre o wallpaper, 0f..1f. Zero por padrão desde a
+     * Fase 10: a home nasce direto sobre o papel de parede, sem véu no meio.
+     */
+    val backgroundOpacity: Float = 0f,
     val density: Density = Density.DEFAULT,
     val fontScale: Float = 1f,
     /** `"system"` | `"custom"` | um id de `Fonts.bundled`. */
-    val fontId: String = "system",
+    val fontId: String = "nunito",
     /** packageName do pacote de ícones, ou null para os ícones do sistema. */
     val iconPack: String? = null,
     /**
@@ -41,6 +57,19 @@ data class ThemeSettings(
      * campo, o relógio volta a ser o [ClockStyle.BASIC].
      */
     val clockStyle: ClockStyle = ClockStyle.BASIC,
+    /**
+     * Campos novos da Fase 10, no fim e com default, pela mesma razão do
+     * [clockStyle]: o [ThemeFile] continua na versão 1, e um `.cascata-theme`
+     * (ou um `.cascata-backup`) escrito antes desta fase segue válido — o que
+     * faltar no arquivo entra com o padrão de agora.
+     */
+    val favoritesStyle: FavoritesStyle = FavoritesStyle.LIST,
+    val indexStyle: IndexStyle = IndexStyle.WAVE,
+    val wallpaperText: WallpaperText = WallpaperText.AUTO,
+    /** Sombra atrás do texto que fica sobre o papel de parede. */
+    val textShadow: Boolean = true,
+    /** Campo de busca fixo na home; desligado, ele só aparece no gesto ou na busca. */
+    val searchBarVisible: Boolean = false,
 ) {
     companion object {
         val DEFAULT = ThemeSettings()

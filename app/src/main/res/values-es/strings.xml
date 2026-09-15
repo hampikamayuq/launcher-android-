@@ -73,6 +73,19 @@
     <string name="density_default">Predeterminada</string>
     <string name="density_comfortable">Cómoda</string>
     <string name="font_scale">Tamaño del texto</string>
+    <string name="favorites_style">Favoritos</string>
+    <string name="favorites_style_list">Lista</string>
+    <string name="favorites_style_row">Fila</string>
+    <string name="index_style">Índice lateral</string>
+    <string name="index_style_wave">Onda</string>
+    <string name="index_style_straight">Recto</string>
+    <string name="wallpaper_text">Texto sobre el fondo de pantalla</string>
+    <string name="wallpaper_text_auto">Automático</string>
+    <string name="wallpaper_text_light">Claro</string>
+    <string name="wallpaper_text_dark">Oscuro</string>
+    <string name="text_shadow">Sombra en el texto</string>
+    <string name="search_bar_visible">Mostrar siempre el campo de búsqueda</string>
+    <string name="search_bar_visible_hint">Si está apagado, aparece al deslizar hacia arriba o en cuanto empiezas a buscar.</string>
 
     <string name="section_glance">Vista rápida</string>
     <string name="clock_style">Reloj</string>

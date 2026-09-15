@@ -16,6 +16,11 @@ class ThemeFileTest {
         fontId = "outfit",
         iconPack = "com.exemplo.icones",
         clockStyle = ClockStyle.ANALOG,
+        favoritesStyle = FavoritesStyle.ROW,
+        indexStyle = IndexStyle.STRAIGHT,
+        wallpaperText = WallpaperText.DARK,
+        textShadow = false,
+        searchBarVisible = true,
     )
 
     @Test
@@ -97,6 +102,41 @@ class ThemeFileTest {
         val text = ThemeFile.encode(sample)
         assertTrue(text, text.contains("\"clockStyle\": \"ANALOG\""))
         assertEquals(ClockStyle.ANALOG, ThemeFile.decode(text).getOrThrow().clockStyle)
+    }
+
+    /**
+     * Compatibilidade: um `.cascata-theme` escrito antes da Fase 10 não tem
+     * nenhum dos cinco campos novos. Continua na versão 1 e carrega com os
+     * padrões de agora, sem o arquivo virar inválido.
+     */
+    @Test
+    fun `arquivo anterior a fase 10 carrega com os padroes novos`() {
+        val text = """
+            {"format":"cascata-theme","version":1,
+             "theme":{"darkMode":"DARK","colorSource":"ACCENT","accentArgb":-3407804,
+                      "backgroundOpacity":0.3,"density":"COMPACT","fontScale":1.1,
+                      "fontId":"sora","iconPack":null,"clockStyle":"BIG"}}
+        """.trimIndent()
+        val decoded = ThemeFile.decode(text).getOrThrow()
+        assertEquals(ThemeSettings.DEFAULT.favoritesStyle, decoded.favoritesStyle)
+        assertEquals(ThemeSettings.DEFAULT.indexStyle, decoded.indexStyle)
+        assertEquals(ThemeSettings.DEFAULT.wallpaperText, decoded.wallpaperText)
+        assertEquals(ThemeSettings.DEFAULT.textShadow, decoded.textShadow)
+        assertEquals(ThemeSettings.DEFAULT.searchBarVisible, decoded.searchBarVisible)
+        // E o que o arquivo tinha continua valendo.
+        assertEquals(ClockStyle.BIG, decoded.clockStyle)
+        assertEquals("sora", decoded.fontId)
+        assertEquals(0.3f, decoded.backgroundOpacity, 0f)
+    }
+
+    @Test
+    fun `os campos da fase 10 sobrevivem ao arquivo`() {
+        val text = ThemeFile.encode(sample)
+        assertTrue(text, text.contains("\"favoritesStyle\": \"ROW\""))
+        assertTrue(text, text.contains("\"indexStyle\": \"STRAIGHT\""))
+        assertTrue(text, text.contains("\"wallpaperText\": \"DARK\""))
+        assertTrue(text, text.contains("\"textShadow\": false"))
+        assertTrue(text, text.contains("\"searchBarVisible\": true"))
     }
 
     @Test

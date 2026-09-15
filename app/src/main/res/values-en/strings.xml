@@ -73,6 +73,19 @@
     <string name="density_default">Default</string>
     <string name="density_comfortable">Comfortable</string>
     <string name="font_scale">Text size</string>
+    <string name="favorites_style">Favorites</string>
+    <string name="favorites_style_list">List</string>
+    <string name="favorites_style_row">Row</string>
+    <string name="index_style">Side index</string>
+    <string name="index_style_wave">Wave</string>
+    <string name="index_style_straight">Straight</string>
+    <string name="wallpaper_text">Text over the wallpaper</string>
+    <string name="wallpaper_text_auto">Automatic</string>
+    <string name="wallpaper_text_light">Light</string>
+    <string name="wallpaper_text_dark">Dark</string>
+    <string name="text_shadow">Text shadow</string>
+    <string name="search_bar_visible">Always show the search field</string>
+    <string name="search_bar_visible_hint">When off, it shows up on the swipe-up gesture or as soon as you start searching.</string>
 
     <string name="section_glance">At a glance</string>
     <string name="clock_style">Clock</string>

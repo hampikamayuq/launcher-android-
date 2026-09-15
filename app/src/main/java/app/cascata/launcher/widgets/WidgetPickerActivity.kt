@@ -123,6 +123,9 @@ class WidgetPickerActivity : ComponentActivity() {
                 settings = settings,
                 customFont = customFont,
                 wallpaperSeed = wallpaperSeed,
+                // Esta tela tem fundo próprio e opaco: a opacidade da home não
+                // diz nada sobre ela, e a tinta de papel de parede sumiria aqui.
+                overWallpaper = false,
             ) {
                 PickerScreen(
                     load = { withContext(Dispatchers.IO) { app.widgetHost.installedProviders() } },

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -22,6 +23,11 @@ private val FONT_SCALE = floatPreferencesKey("font_scale")
 private val FONT_ID = stringPreferencesKey("font_id")
 private val ICON_PACK = stringPreferencesKey("icon_pack")
 private val CLOCK_STYLE = stringPreferencesKey("clock_style")
+private val FAVORITES_STYLE = stringPreferencesKey("favorites_style")
+private val INDEX_STYLE = stringPreferencesKey("index_style")
+private val WALLPAPER_TEXT = stringPreferencesKey("wallpaper_text")
+private val TEXT_SHADOW = booleanPreferencesKey("text_shadow")
+private val SEARCH_BAR_VISIBLE = booleanPreferencesKey("search_bar_visible")
 
 /**
  * Arquivo separado do "cascata" de propósito: assim `reset()` devolve a aparência
@@ -63,6 +69,13 @@ private fun Preferences.toSettings(): ThemeSettings = ThemeSettings(
     fontId = this[FONT_ID] ?: ThemeSettings.DEFAULT.fontId,
     iconPack = this[ICON_PACK],
     clockStyle = enumOr(this[CLOCK_STYLE], ClockStyle.BASIC),
+    // Chaves da Fase 10: ausentes (instalação antiga, DataStore recém-limpo)
+    // caem no padrão de agora, como qualquer outro campo novo daqui.
+    favoritesStyle = enumOr(this[FAVORITES_STYLE], ThemeSettings.DEFAULT.favoritesStyle),
+    indexStyle = enumOr(this[INDEX_STYLE], ThemeSettings.DEFAULT.indexStyle),
+    wallpaperText = enumOr(this[WALLPAPER_TEXT], ThemeSettings.DEFAULT.wallpaperText),
+    textShadow = this[TEXT_SHADOW] ?: ThemeSettings.DEFAULT.textShadow,
+    searchBarVisible = this[SEARCH_BAR_VISIBLE] ?: ThemeSettings.DEFAULT.searchBarVisible,
 ).coerced()
 
 private fun MutablePreferences.write(settings: ThemeSettings) {
@@ -74,6 +87,11 @@ private fun MutablePreferences.write(settings: ThemeSettings) {
     this[FONT_SCALE] = settings.fontScale
     this[FONT_ID] = settings.fontId
     this[CLOCK_STYLE] = settings.clockStyle.name
+    this[FAVORITES_STYLE] = settings.favoritesStyle.name
+    this[INDEX_STYLE] = settings.indexStyle.name
+    this[WALLPAPER_TEXT] = settings.wallpaperText.name
+    this[TEXT_SHADOW] = settings.textShadow
+    this[SEARCH_BAR_VISIBLE] = settings.searchBarVisible
     val pack = settings.iconPack
     if (pack == null) remove(ICON_PACK) else this[ICON_PACK] = pack
 }

@@ -21,6 +21,8 @@ object Fonts {
     const val CUSTOM_ID = "custom"
 
     val bundled: List<BundledFont> = listOf(
+        // Arredondada e de rótulo curto: é a fonte padrão desde a Fase 10.
+        BundledFont("nunito", "Nunito", variable(R.font.nunito)),
         BundledFont("outfit", "Outfit", variable(R.font.outfit)),
         BundledFont("sora", "Sora", variable(R.font.sora)),
         BundledFont(

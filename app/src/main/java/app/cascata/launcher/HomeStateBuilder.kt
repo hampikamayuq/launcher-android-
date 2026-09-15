@@ -78,6 +78,22 @@ class HomeStateBuilder<T>(
     }
 }
 
+/**
+ * As linhas de uma letra só: o cabeçalho dela e os apps que vêm debaixo, até o
+ * cabeçalho seguinte. Serve à home que mostra uma seção de cada vez (o índice
+ * alfabético em onda) sem ter de refazer a montagem a cada arraste do dedo.
+ *
+ * Letra que não existe na lista — inclusive quando a busca está ativa e não há
+ * seção nenhuma — devolve lista vazia.
+ */
+fun <T> HomeList<T>.rowsForLetter(letter: Char): List<Row<T>> {
+    val start = sectionIndex[letter] ?: return emptyList()
+    // O `sectionIndex` está na ordem das linhas, então o fim da seção é o começo
+    // da primeira seção depois dela; na última letra, o fim da lista.
+    val end = sectionIndex.values.firstOrNull { it > start } ?: rows.size
+    return rows.subList(start, end).toList()
+}
+
 /** A partir daqui vale a tolerância a erro; abaixo disso, prefixo tem de ser exato. */
 private const val FUZZY_MIN = 4
 

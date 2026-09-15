@@ -13,7 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
@@ -25,6 +29,7 @@ import app.cascata.launcher.data.theme.Density
 import app.cascata.launcher.data.theme.SchemeColors
 import app.cascata.launcher.data.theme.ThemeSettings
 import app.cascata.launcher.data.theme.seedScheme
+import app.cascata.launcher.data.theme.wallpaperInk
 import java.io.File
 import androidx.compose.ui.unit.Density as UiDensity
 
@@ -55,6 +60,28 @@ val LocalLauncherDensity = staticCompositionLocalOf { Density.DEFAULT }
 /** Alfa da superfície sobre o papel de parede, pelo mesmo motivo. */
 val LocalBackgroundOpacity = staticCompositionLocalOf { ThemeSettings.DEFAULT.backgroundOpacity }
 
+/**
+ * `true` quando o texto está desenhado direto sobre o papel de parede, e não
+ * sobre uma superfície do tema. A UI usa isto para o que a cor sozinha não
+ * resolve — o ripple de um toque, uma borda que só existe para separar do fundo.
+ */
+val LocalOnWallpaper = staticCompositionLocalOf { false }
+
+/**
+ * Abaixo desta opacidade a superfície já não cobre nada: o texto está, na
+ * prática, sobre a foto do papel de parede, e é a tinta de wallpaper que vale.
+ */
+const val ON_WALLPAPER_MAX_OPACITY = 0.25f
+
+/** Tinta escura de wallpaper — a mesma `onSurface` do tema claro. */
+private val WallpaperDarkInk = Color(0xFF14181F)
+
+/**
+ * Luminância mínima da cor de destaque sobre um fundo desconhecido e com texto
+ * claro por perto. Abaixo disso ela some no papel de parede escuro.
+ */
+private const val MIN_ACCENT_LUMINANCE = 0.35f
+
 /** Espaço acima e abaixo do rótulo numa linha da lista. */
 val Density.rowPadding: Dp
     get() = when (this) {
@@ -75,14 +102,21 @@ val Density.iconSize: Dp
  * O tema inteiro sai de [settings]: o que a tela de configurações grava chega
  * aqui pelo mesmo Flow que a home observa, e a aparência muda sem reiniciar.
  *
- * [customFont] e [wallpaperSeed] vêm de fora porque nenhum dos dois é uma
- * preferência: um é arquivo no disco, o outro é o papel de parede do sistema.
+ * [customFont], [wallpaperSeed] e [wallpaperDarkText] vêm de fora porque
+ * nenhum dos três é uma preferência: um é arquivo no disco, os outros dois são
+ * o papel de parede do sistema.
+ *
+ * [overWallpaper] distingue a home das telas que têm fundo próprio e opaco
+ * (configurações, seletor de widgets, boas-vindas): a opacidade do fundo é uma
+ * preferência da home, e só lá ela quer dizer "o texto vai cair sobre a foto".
  */
 @Composable
 fun CascataTheme(
     settings: ThemeSettings = ThemeSettings.DEFAULT,
     customFont: File? = null,
     wallpaperSeed: Int? = null,
+    wallpaperDarkText: Boolean? = null,
+    overWallpaper: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -108,12 +142,21 @@ fun CascataTheme(
         else -> LightColors
     }
 
+    // Sobre o papel de parede: sem superfície por baixo, as cores "on…" do
+    // esquema (calculadas contra uma superfície que não está lá) não valem.
+    val onWallpaper = overWallpaper && settings.backgroundOpacity < ON_WALLPAPER_MAX_OPACITY
+    val darkInk = wallpaperInk(settings.wallpaperText, wallpaperDarkText)
+    val scheme = if (onWallpaper) colors.onWallpaper(darkInk) else colors
+
     val family = remember(settings.fontId, customFont) { Fonts.family(settings.fontId, customFont) }
-    val typography = remember(family) {
-        if (family == null) Typography() else Typography().withFamily(family)
+    val shadow = if (onWallpaper && settings.textShadow) wallpaperShadow(darkInk) else null
+    val typography = remember(family, shadow) {
+        var typography = if (family == null) Typography() else Typography().withFamily(family)
+        if (shadow != null) typography = typography.withShadow(shadow)
+        typography
     }
 
-    MaterialTheme(colorScheme = colors, typography = typography) {
+    MaterialTheme(colorScheme = scheme, typography = typography) {
         val base = LocalDensity.current
         CompositionLocalProvider(
             // A escala do usuário multiplica a do sistema em vez de substituí-la:
@@ -121,6 +164,7 @@ fun CascataTheme(
             LocalDensity provides UiDensity(base.density, base.fontScale * settings.fontScale),
             LocalLauncherDensity provides settings.density,
             LocalBackgroundOpacity provides settings.backgroundOpacity,
+            LocalOnWallpaper provides onWallpaper,
             content = content,
         )
     }
@@ -165,6 +209,59 @@ private fun SchemeColors.toColorScheme(dark: Boolean): ColorScheme = if (dark) {
     )
 }
 
+/**
+ * O esquema com as tintas de wallpaper no lugar das que dependiam da superfície.
+ *
+ * Só `onSurface`, `onSurfaceVariant` e `onBackground` mudam: são as três que a
+ * home usa para rótulo, cabeçalho de seção e texto secundário, justamente as que
+ * ficariam por cima da foto. `surface` e `background` seguem como estão porque
+ * quem os desenha já os pinta com a opacidade escolhida (zero, aqui).
+ *
+ * `primary` fica com a cor do usuário — trocá-la apagaria a escolha de cor de
+ * destaque. O que se garante é o piso de contraste: com texto claro, uma
+ * primária escura demais some no fundo, então entra a `primaryContainer` (que a
+ * paleta já calcula clara no tema escuro) e, se nem ela subir de
+ * [MIN_ACCENT_LUMINANCE], uma versão clareada da própria primária. Clarear é
+ * preferível a cair no branco: o matiz escolhido continua reconhecível.
+ */
+private fun ColorScheme.onWallpaper(darkInk: Boolean): ColorScheme {
+    val ink = if (darkInk) WallpaperDarkInk else Color.White
+    // O texto secundário perde alfa em vez de ganhar cinza: o cinza é calculado
+    // contra uma superfície, e aqui por baixo não há superfície nenhuma.
+    val inkVariant = ink.copy(alpha = if (darkInk) 0.80f else 0.85f)
+    return copy(
+        onSurface = ink,
+        onSurfaceVariant = inkVariant,
+        onBackground = ink,
+        primary = if (darkInk) primary else primary.readableOnDarkBackdrop(primaryContainer),
+    )
+}
+
+/** A primária, ou algo tão parecido quanto possível que não suma num fundo escuro. */
+private fun Color.readableOnDarkBackdrop(container: Color): Color = when {
+    luminance() >= MIN_ACCENT_LUMINANCE -> this
+    container.luminance() >= MIN_ACCENT_LUMINANCE -> container
+    else -> lightenTo(MIN_ACCENT_LUMINANCE)
+}
+
+/** Mistura com branco em passos pequenos até a luminância chegar a [target]. */
+private fun Color.lightenTo(target: Float): Color {
+    var mix = 0.1f
+    while (mix < 1f) {
+        val lighter = lerp(this, Color.White, mix)
+        if (lighter.luminance() >= target) return lighter
+        mix += 0.1f
+    }
+    return Color.White
+}
+
+/** A sombra que descola o texto da foto: escura atrás do texto claro, e vice-versa. */
+private fun wallpaperShadow(darkInk: Boolean): Shadow = Shadow(
+    color = if (darkInk) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.45f),
+    offset = Offset(0f, 1.5f),
+    blurRadius = 6f,
+)
+
 /** A fonte escolhida em todos os estilos — a Typography não tem um "fontFamily" só. */
 private fun Typography.withFamily(family: FontFamily): Typography = copy(
     displayLarge = displayLarge.copy(fontFamily = family),
@@ -182,4 +279,23 @@ private fun Typography.withFamily(family: FontFamily): Typography = copy(
     labelLarge = labelLarge.copy(fontFamily = family),
     labelMedium = labelMedium.copy(fontFamily = family),
     labelSmall = labelSmall.copy(fontFamily = family),
+)
+
+/** A mesma sombra em todos os estilos, pelo mesmo motivo do [withFamily]. */
+private fun Typography.withShadow(shadow: Shadow): Typography = copy(
+    displayLarge = displayLarge.copy(shadow = shadow),
+    displayMedium = displayMedium.copy(shadow = shadow),
+    displaySmall = displaySmall.copy(shadow = shadow),
+    headlineLarge = headlineLarge.copy(shadow = shadow),
+    headlineMedium = headlineMedium.copy(shadow = shadow),
+    headlineSmall = headlineSmall.copy(shadow = shadow),
+    titleLarge = titleLarge.copy(shadow = shadow),
+    titleMedium = titleMedium.copy(shadow = shadow),
+    titleSmall = titleSmall.copy(shadow = shadow),
+    bodyLarge = bodyLarge.copy(shadow = shadow),
+    bodyMedium = bodyMedium.copy(shadow = shadow),
+    bodySmall = bodySmall.copy(shadow = shadow),
+    labelLarge = labelLarge.copy(shadow = shadow),
+    labelMedium = labelMedium.copy(shadow = shadow),
+    labelSmall = labelSmall.copy(shadow = shadow),
 )

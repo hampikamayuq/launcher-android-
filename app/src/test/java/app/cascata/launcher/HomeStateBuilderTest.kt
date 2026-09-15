@@ -39,6 +39,14 @@ private fun HomeList<FakeApp>.labels(): List<String> = rows.map {
 private fun HomeList<FakeApp>.appLabels(): List<String> =
     rows.filterIsInstance<Row.App<FakeApp>>().map { it.entry.label }
 
+/** O mesmo rótulo por linha de [HomeList.labels], para um pedaço solto da lista. */
+private fun List<Row<FakeApp>>.labels(): List<String> = map {
+    when (it) {
+        is Row.Header -> it.letter.toString()
+        is Row.App -> it.entry.label
+    }
+}
+
 class HomeStateBuilderTest {
 
     private val apps = listOf(
@@ -142,6 +150,44 @@ class HomeStateBuilderTest {
         val list = builder().build(apps, emptyList(), emptySet(), emptyMap(), "a")
         assertEquals(emptyMap<Char, Int>(), list.sectionIndex)
         assertTrue(list.rows.none { it is Row.Header })
+    }
+
+    @Test
+    fun `as linhas de uma letra do meio vao do cabecalho ao proximo`() {
+        val list = builder().build(apps, emptyList(), emptySet(), emptyMap(), "")
+        assertEquals(listOf("B", "Banco do Brasil"), list.rowsForLetter('B').labels())
+        assertEquals(Row.Header('B'), list.rowsForLetter('B').first())
+    }
+
+    @Test
+    fun `a ultima letra vai ate o fim da lista`() {
+        val list = builder().build(apps, emptyList(), emptySet(), emptyMap(), "")
+        assertEquals(listOf("C", "Câmera"), list.rowsForLetter('C').labels())
+    }
+
+    @Test
+    fun `o cerquilha e uma secao como as outras`() {
+        val list = builder().build(apps, emptyList(), emptySet(), emptyMap(), "")
+        assertEquals(listOf("#", "1Password"), list.rowsForLetter('#').labels())
+    }
+
+    @Test
+    fun `uma secao com varios apps traz todos eles`() {
+        val muitos = apps + listOf(fakeApp("b2", "Bluetooth"), fakeApp("b3", "Boletos"))
+        val list = builder().build(muitos, emptyList(), emptySet(), emptyMap(), "")
+        assertEquals(
+            listOf("B", "Banco do Brasil", "Bluetooth", "Boletos"),
+            list.rowsForLetter('B').labels(),
+        )
+    }
+
+    @Test
+    fun `letra que nao existe devolve lista vazia`() {
+        val list = builder().build(apps, emptyList(), emptySet(), emptyMap(), "")
+        assertEquals(emptyList<Row<FakeApp>>(), list.rowsForLetter('Z'))
+        // Na busca não há seção nenhuma, então nem a letra que existia responde.
+        val busca = builder().build(apps, emptyList(), emptySet(), emptyMap(), "ban")
+        assertEquals(emptyList<Row<FakeApp>>(), busca.rowsForLetter('B'))
     }
 
     @Test

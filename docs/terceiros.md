@@ -19,6 +19,7 @@ Todas sob **SIL Open Font License 1.1**; texto integral em `licenses/fonts/`.
 
 | Fonte | Autores | Arquivo |
 |---|---|---|
+| Nunito | The Nunito Project Authors | `nunito.ttf` (variável, eixo `wght`) |
 | Outfit | The Outfit Project Authors | `outfit.ttf` (variável, eixo `wght`) |
 | Sora | The Sora Project Authors | `sora.ttf` (variável, eixo `wght`) |
 | Atkinson Hyperlegible | Braille Institute of America | `atkinson_regular.ttf`, `atkinson_bold.ttf` |

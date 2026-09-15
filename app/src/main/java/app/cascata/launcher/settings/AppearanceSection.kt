@@ -43,10 +43,14 @@ import app.cascata.launcher.R
 import app.cascata.launcher.data.theme.ColorSource
 import app.cascata.launcher.data.theme.DarkMode
 import app.cascata.launcher.data.theme.Density
+import app.cascata.launcher.data.theme.FavoritesStyle
+import app.cascata.launcher.data.theme.IndexStyle
 import app.cascata.launcher.data.theme.MAX_FONT_SCALE
 import app.cascata.launcher.data.theme.MIN_FONT_SCALE
 import app.cascata.launcher.data.theme.ThemeSettings
+import app.cascata.launcher.data.theme.WallpaperText
 import app.cascata.launcher.data.theme.contrastRatio
+import app.cascata.launcher.ui.theme.ON_WALLPAPER_MAX_OPACITY
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -121,6 +125,55 @@ internal fun AppearanceSection(settings: ThemeSettings, update: UpdateSettings) 
             range = MIN_FONT_SCALE..MAX_FONT_SCALE,
             steps = ((MAX_FONT_SCALE - MIN_FONT_SCALE) / FONT_SCALE_STEP).roundToInt() - 1,
             onChange = { scale -> update { it.copy(fontScale = scale) } },
+        )
+
+        SegmentedChoice(
+            label = stringResource(R.string.favorites_style),
+            options = listOf(
+                FavoritesStyle.LIST to stringResource(R.string.favorites_style_list),
+                FavoritesStyle.ROW to stringResource(R.string.favorites_style_row),
+            ),
+            selected = settings.favoritesStyle,
+            onSelect = { style -> update { it.copy(favoritesStyle = style) } },
+        )
+
+        SegmentedChoice(
+            label = stringResource(R.string.index_style),
+            options = listOf(
+                IndexStyle.WAVE to stringResource(R.string.index_style_wave),
+                IndexStyle.STRAIGHT to stringResource(R.string.index_style_straight),
+            ),
+            selected = settings.indexStyle,
+            onSelect = { style -> update { it.copy(indexStyle = style) } },
+        )
+
+        // Cor e sombra do texto só existem enquanto ele cai sobre a foto: com a
+        // superfície opaca por cima quem manda é a paleta, e estes dois
+        // controles não mudariam nada na tela.
+        if (settings.backgroundOpacity < ON_WALLPAPER_MAX_OPACITY) {
+            SegmentedChoice(
+                label = stringResource(R.string.wallpaper_text),
+                options = listOf(
+                    WallpaperText.AUTO to stringResource(R.string.wallpaper_text_auto),
+                    WallpaperText.LIGHT to stringResource(R.string.wallpaper_text_light),
+                    WallpaperText.DARK to stringResource(R.string.wallpaper_text_dark),
+                ),
+                selected = settings.wallpaperText,
+                onSelect = { text -> update { it.copy(wallpaperText = text) } },
+            )
+
+            SwitchRow(
+                label = stringResource(R.string.text_shadow),
+                checked = settings.textShadow,
+                onCheckedChange = { on -> update { it.copy(textShadow = on) } },
+            )
+        }
+
+        SwitchRow(
+            label = stringResource(R.string.search_bar_visible),
+            checked = settings.searchBarVisible,
+            onCheckedChange = { on -> update { it.copy(searchBarVisible = on) } },
+            supporting = stringResource(R.string.search_bar_visible_hint),
         )
     }
 }

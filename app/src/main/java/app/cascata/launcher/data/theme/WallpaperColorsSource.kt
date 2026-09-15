@@ -1,5 +1,6 @@
 package app.cascata.launcher.data.theme
 
+import android.app.WallpaperColors
 import android.app.WallpaperManager
 import android.content.Context
 import android.os.Build
@@ -27,6 +28,17 @@ class WallpaperColorsSource(context: Context) {
         return readPrimary()
     }
 
+    /**
+     * O que o sistema acha do papel de parede atual: `true` quando ele aguenta
+     * texto escuro por cima, `false` quando pede texto claro, `null` quando não
+     * há resposta — abaixo do Android 12 (onde `colorHints` ainda não existe),
+     * sem papel de parede próprio, ou se a leitura falhar.
+     */
+    fun supportsDarkText(): Boolean? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+        return readDarkTextHint()
+    }
+
     /** Emite a cada troca de papel de parede; nada abaixo do Android 8.1. */
     fun changes(): Flow<Unit> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) colorChanges() else emptyFlow()
@@ -34,6 +46,12 @@ class WallpaperColorsSource(context: Context) {
     @RequiresApi(Build.VERSION_CODES.O_MR1)
     private fun readPrimary(): Int? = runCatching {
         manager?.getWallpaperColors(WallpaperManager.FLAG_SYSTEM)?.primaryColor?.toArgb()
+    }.getOrNull()
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun readDarkTextHint(): Boolean? = runCatching {
+        val colors = manager?.getWallpaperColors(WallpaperManager.FLAG_SYSTEM) ?: return null
+        colors.colorHints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT != 0
     }.getOrNull()
 
     @RequiresApi(Build.VERSION_CODES.O_MR1)
