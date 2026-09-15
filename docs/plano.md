@@ -255,3 +255,37 @@ commits antigos:
   arrastar a borda do widget ficou de fora.
 - **Animação de saída das folhas** (*bottom sheets*). As folhas (menu de
   contexto, edição de widget, uso) abrem com animação; fechar é instantâneo.
+
+## 9. Depois da 1.0
+
+### Fase 10 — Sobre o papel de parede (v1.1)
+
+Pedido do usuário, a partir de capturas do launcher que ele usa: a tela
+inicial diretamente sobre o papel de parede, sem superfície por cima; texto
+com sombra e cor escolhida pelo papel de parede; favoritos numa lista
+vertical, com rótulo, como o resto da gaveta; índice alfabético que se curva
+ao redor do dedo, com uma bolha mostrando a letra, e que enquanto o dedo está
+nele mostra só os apps daquela letra; campo de busca escondido até o gesto de
+subir; fonte arredondada.
+
+O que entra:
+
+- `ThemeSettings` ganha `favoritesStyle` (lista/linha), `indexStyle`
+  (onda/reto), `wallpaperText` (automático/claro/escuro), `textShadow` e
+  `searchBarVisible`, todos no fim e com default: o `.cascata-theme` versão 1
+  e o backup continuam válidos. Defaults novos: opacidade 0, fonte Nunito.
+- `CascataTheme` decide a tinta quando a superfície é transparente: o
+  `WallpaperColors.HINT_SUPPORTS_DARK_TEXT` do sistema escolhe entre claro e
+  escuro no modo automático; a sombra vai em toda a tipografia.
+- `AlphabetIndex` em onda: cada letra se desloca para a esquerda em função da
+  distância ao dedo (curva gaussiana), a letra sob o dedo vira uma bolha, e a
+  lista passa a mostrar só a seção daquela letra (`rowsForLetter`, puro e
+  testado). Soltar mantém a seção; voltar, rolar ou tocar na estrela do topo
+  devolve a tela inicial.
+- `FavoritesList`: os favoritos como linhas de app, reordenáveis por toque
+  longo e arraste vertical. A linha horizontal continua como opção.
+- Campo de busca: por padrão só aparece no gesto de subir ou com busca ativa.
+- Prévias e screenshots da loja regeradas com o visual novo.
+
+Fora desta fase: o card de "coloque a sua localização para o clima" (o clima
+já pede a permissão de outro jeito) e qualquer ícone gerado automaticamente.
